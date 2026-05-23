@@ -289,3 +289,28 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
   cursor: pointer;
 }
 #image-remove:hover { background: #d70015; }
+
+/* ===== 구글 인증 바 ===== */
+.auth-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 40px;
+  margin-bottom: 12px;
+}
+.auth-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.auth-name {
+  color: #34a853;
+  font-weight: 500;
+}
+
+/* ===== 편집 권한 제어 ===== */
+.owner-only { display: none !important; }
+body.is-owner .owner-only { display: revert !important; }
+body.is-owner .button-row.owner-only { display: flex !important; }
+body.is-owner .full-btn.owner-only { display: block !important; }

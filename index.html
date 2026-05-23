@@ -5,10 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>메이플랜드 파밍 계산기</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div class="container">
     <h1>🍁 파밍 계산기</h1>
+
+    <div class="auth-bar">
+      <div id="google-signin-btn"></div>
+      <div id="auth-info" class="auth-info hidden">
+        <span id="auth-name" class="auth-name"></span>
+        <button id="btn-signout" class="small-btn">로그아웃</button>
+      </div>
+    </div>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="items">아이템</button>
@@ -24,10 +33,13 @@
           <input id="mashop-query" type="text" placeholder="예: 자쿰의 투구, 흑국" />
           <button id="mashop-search">검색 ↗</button>
         </div>
+        <div>
+            <a target="_blank" href="https://mashop.kr/jari/%EB%A3%A8%EB%8D%94%EC%8A%A4%ED%98%B8%EC%88%98%3A%20%EA%B9%8C%EB%A7%89%EC%82%B0%20%EC%9E%85%EA%B5%AC">까막산 입구</a>            
+        </div>
       </div>
 
       <div id="items-grid" class="items-grid"></div>
-      <button id="btn-add-item" class="full-btn">+ 아이템 추가</button>
+      <button id="btn-add-item" class="full-btn owner-only">+ 아이템 추가</button>
 
       <div class="summary">
         <p class="label">전체 사냥 추정</p>
@@ -72,7 +84,7 @@
         </div>
       </div>
 
-      <div class="button-row">
+      <div class="button-row owner-only">
         <button id="btn-start">▶ 시작</button>
         <button id="btn-pause" disabled>⏸ 일시정지</button>
         <button id="btn-stop" disabled>⏹ 종료</button>
@@ -81,7 +93,7 @@
 
       <div id="save-prompt" class="save-prompt hidden">
         <p id="save-summary"></p>
-        <button id="btn-save">💾 기록 저장</button>
+        <button id="btn-save" class="owner-only">💾 기록 저장</button>
       </div>
     </div>
 
@@ -89,7 +101,7 @@
     <div id="panel-history" class="panel hidden">
       <div class="row-between">
         <p>저장된 파밍 기록</p>
-        <button id="btn-clear-all" class="small-btn">전체 삭제</button>
+        <button id="btn-clear-all" class="small-btn owner-only">전체 삭제</button>
       </div>
       <div id="history-list"></div>
       <p id="history-empty" class="empty">아직 저장된 기록이 없어요</p>

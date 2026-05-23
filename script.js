@@ -1,3 +1,65 @@
+// ===== 구글 인증 =====
+// ⚠️ CLIENT_ID를 Google Cloud Console에서 발급받은 OAuth 2.0 Client ID로 교체하세요
+const CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com';
+
+const OWNER_EMAILS = new Set([
+  'sodkem93@gmail.com',
+  'eliceyong93@gmail.com',
+  'sodkem932@gmail.com',
+]);
+
+let isOwner = localStorage.getItem('owner_logged_in') === 'true';
+
+function applyAuthState() {
+  document.body.classList.toggle('is-owner', isOwner);
+}
+applyAuthState();
+
+function parseJwt(token) {
+  const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(decodeURIComponent(
+    atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+  ));
+}
+
+function handleCredentialResponse(response) {
+  const payload = parseJwt(response.credential);
+  if (!OWNER_EMAILS.has(payload.email)) {
+    alert('이 계정에는 편집 권한이 없습니다.');
+    return;
+  }
+  isOwner = true;
+  localStorage.setItem('owner_logged_in', 'true');
+  localStorage.setItem('owner_name', payload.name || payload.email);
+  document.getElementById('auth-name').textContent = payload.name || payload.email;
+  document.getElementById('auth-info').classList.remove('hidden');
+  document.getElementById('google-signin-btn').classList.add('hidden');
+  applyAuthState();
+  renderItems();
+}
+
+function initGoogleAuth() {
+  if (typeof google === 'undefined') return;
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleCredentialResponse,
+    auto_select: false,
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('google-signin-btn'),
+    { theme: 'outline', size: 'small', text: 'signin_with', locale: 'ko' }
+  );
+}
+
+window.addEventListener('load', () => {
+  initGoogleAuth();
+  if (isOwner) {
+    document.getElementById('auth-name').textContent = localStorage.getItem('owner_name') || '관리자';
+    document.getElementById('auth-info').classList.remove('hidden');
+    document.getElementById('google-signin-btn').classList.add('hidden');
+  }
+});
+
 // ===== 탭 전환 =====
 const tabs = document.querySelectorAll('.tab-btn');
 const panels = {
@@ -74,14 +136,14 @@ function renderItems() {
     card.innerHTML = `
       <div class="item-image-wrap">
         ${imgHtml}
-        <button class="item-edit" data-edit="${item.id}">⚙</button>
+        ${isOwner ? `<button class="item-edit" data-edit="${item.id}">⚙</button>` : ''}
       </div>
       <p class="item-name">${item.name}</p>
       <p class="item-rate">${item.rate}% 드랍</p>
       <div class="counter">
-        <button data-minus="${item.id}">−</button>
+        ${isOwner ? `<button data-minus="${item.id}">−</button>` : ''}
         <div class="display">${item.count}</div>
-        <button class="plus" data-plus="${item.id}">+</button>
+        ${isOwner ? `<button class="plus" data-plus="${item.id}">+</button>` : ''}
       </div>
       <p class="item-estimate">${estimateText}</p>
     `;
@@ -343,7 +405,7 @@ function renderHistory() {
           <p style="font-weight:500">${s.location}</p>
           <p style="font-size:11px;color:#999">${s.date}</p>
         </div>
-        <button data-del="${s.id}" class="small-btn">✕</button>
+        ${isOwner ? `<button data-del="${s.id}" class="small-btn">✕</button>` : ''}
       </div>
       <div class="stats">
         <div><span>시간</span><br><strong>${s.durationStr}</strong></div>
@@ -363,6 +425,17 @@ function renderHistory() {
     };
   });
 }
+document.getElementById('btn-signout').onclick = () => {
+  isOwner = false;
+  localStorage.removeItem('owner_logged_in');
+  localStorage.removeItem('owner_name');
+  if (typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
+  document.getElementById('auth-info').classList.add('hidden');
+  document.getElementById('google-signin-btn').classList.remove('hidden');
+  applyAuthState();
+  renderItems();
+};
+
 document.getElementById('btn-clear-all').onclick = () => {
   if (confirm('정말 모든 기록을 삭제할까요?')) {
     localStorage.removeItem('farming-history');
