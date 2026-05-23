@@ -102,8 +102,19 @@
       <h3>아이템 설정</h3>
       <label>이름</label>
       <input id="m-name" type="text" />
-      <label>이미지 URL (선택)</label>
-      <input id="m-image" type="text" placeholder="https://..." />
+      <label>아이템 이미지 (선택)</label>
+      <div id="image-drop-zone" class="image-drop-zone">
+        <div id="image-preview-wrap">
+          <img id="image-preview" alt="" />
+          <button type="button" id="image-remove" title="이미지 제거">×</button>
+        </div>
+        <div id="image-empty">
+          <p class="drop-main">📋 여기에 붙여넣기 (Ctrl+V)</p>
+          <p class="drop-sub">또는 이미지를 끌어다 놓기</p>
+          <button type="button" id="image-pick">파일 선택</button>
+          <input type="file" id="image-file" accept="image/*" style="display:none" />
+        </div>
+      </div>
       <label>드랍 확률 (%)</label>
       <input id="m-rate" type="number" step="0.01" min="0.0001" />
       <label>현재 개수</label>

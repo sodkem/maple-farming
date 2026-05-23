@@ -117,16 +117,88 @@ document.getElementById('btn-add-item').onclick = () => {
 const modal = document.getElementById('edit-modal');
 let editingId = null;
 
+let pendingImageData = '';
+
+function showImagePreview(dataUrl) {
+  pendingImageData = dataUrl;
+  document.getElementById('image-preview').src = dataUrl;
+  document.getElementById('image-preview-wrap').style.display = 'inline-block';
+  document.getElementById('image-empty').style.display = 'none';
+}
+
+function clearImagePreview() {
+  pendingImageData = '';
+  document.getElementById('image-preview').src = '';
+  document.getElementById('image-preview-wrap').style.display = 'none';
+  document.getElementById('image-empty').style.display = 'block';
+}
+
+function readImageFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = (e) => showImagePreview(e.target.result);
+  reader.readAsDataURL(file);
+}
+
 function openEdit(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   editingId = id;
   document.getElementById('m-name').value = item.name;
-  document.getElementById('m-image').value = item.image;
   document.getElementById('m-rate').value = item.rate;
   document.getElementById('m-count').value = item.count;
+  
+  // 이미지 미리보기 초기화
+  if (item.image) {
+    showImagePreview(item.image);
+  } else {
+    clearImagePreview();
+  }
+  
   modal.classList.remove('hidden');
 }
+
+// 이미지 업로드 이벤트들
+const dropZone = document.getElementById('image-drop-zone');
+const fileInput = document.getElementById('image-file');
+
+document.getElementById('image-pick').onclick = (e) => {
+  e.stopPropagation();
+  fileInput.click();
+};
+fileInput.onchange = (e) => {
+  if (e.target.files[0]) readImageFile(e.target.files[0]);
+};
+document.getElementById('image-remove').onclick = (e) => {
+  e.stopPropagation();
+  clearImagePreview();
+};
+
+// 드래그앤드롭
+dropZone.ondragover = (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+};
+dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+dropZone.ondrop = (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) readImageFile(e.dataTransfer.files[0]);
+};
+
+// 붙여넣기 (Ctrl+V) - 모달이 열려있을 때만 작동
+document.addEventListener('paste', (e) => {
+  if (modal.classList.contains('hidden')) return;
+  const items = e.clipboardData.items;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.startsWith('image/')) {
+      const file = items[i].getAsFile();
+      readImageFile(file);
+      e.preventDefault();
+      break;
+    }
+  }
+});
 document.getElementById('m-cancel').onclick = () => modal.classList.add('hidden');
 document.getElementById('m-delete').onclick = () => {
   items = items.filter(i => i.id !== editingId);
@@ -136,7 +208,7 @@ document.getElementById('m-delete').onclick = () => {
 document.getElementById('m-save').onclick = () => {
   const item = items.find(i => i.id === editingId);
   item.name = document.getElementById('m-name').value || '이름 없음';
-  item.image = document.getElementById('m-image').value.trim();
+  item.image = pendingImageData;
   item.rate = parseFloat(document.getElementById('m-rate').value) || 0;
   item.count = parseInt(document.getElementById('m-count').value) || 0;
   saveItems(); renderItems();
