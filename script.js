@@ -1,0 +1,301 @@
+// ===== 탭 전환 =====
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = {
+  items: document.getElementById('panel-items'),
+  timer: document.getElementById('panel-timer'),
+  history: document.getElementById('panel-history')
+};
+tabs.forEach(t => {
+  t.onclick = () => {
+    tabs.forEach(o => o.classList.remove('active'));
+    t.classList.add('active');
+    Object.values(panels).forEach(p => p.classList.add('hidden'));
+    panels[t.dataset.tab].classList.remove('hidden');
+    if (t.dataset.tab === 'history') renderHistory();
+  };
+});
+
+// ===== 메랜샵 검색 =====
+const mashopQuery = document.getElementById('mashop-query');
+const mashopSearch = document.getElementById('mashop-search');
+function doSearch() {
+  const q = mashopQuery.value.trim();
+  if (!q) return;
+  window.open('https://mashop.kr/?search=' + encodeURIComponent(q), '_blank');
+}
+mashopSearch.onclick = doSearch;
+mashopQuery.onkeydown = (e) => { if (e.key === 'Enter') doSearch(); };
+
+// ===== 아이템 관리 =====
+const itemsGrid = document.getElementById('items-grid');
+const totalKills = document.getElementById('total-kills');
+let items = [];
+let nextId = 1;
+
+function loadItems() {
+  const raw = localStorage.getItem('farming-items');
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      items = data.items || [];
+      nextId = data.nextId || 1;
+    } catch (e) {}
+  }
+  if (items.length === 0) {
+    items = [{ id: nextId++, name: '아이템 1', image: '', rate: 0.5, count: 0 }];
+  }
+  renderItems();
+}
+function saveItems() {
+  localStorage.setItem('farming-items', JSON.stringify({ items, nextId }));
+}
+
+function calcEstimate(item) {
+  if (item.rate > 0 && item.count > 0) {
+    return Math.round(item.count / (item.rate / 100));
+  }
+  return 0;
+}
+
+function renderItems() {
+  itemsGrid.innerHTML = '';
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    const imgHtml = item.image
+      ? `<img src="${item.image}" alt="" onerror="this.style.display='none';this.parentNode.innerHTML='<span class=placeholder>🖼</span>'+this.parentNode.querySelector('.item-edit').outerHTML">`
+      : `<span class="placeholder">🖼</span>`;
+    const estimate = calcEstimate(item);
+    const estimateText = item.rate > 0 && item.count > 0
+      ? `약 <strong>${estimate.toLocaleString()}</strong>마리 잡은 효과`
+      : item.rate > 0
+      ? `1개당 평균 ${Math.round(1 / (item.rate / 100)).toLocaleString()}마리`
+      : '확률 입력';
+    card.innerHTML = `
+      <div class="item-image-wrap">
+        ${imgHtml}
+        <button class="item-edit" data-edit="${item.id}">⚙</button>
+      </div>
+      <p class="item-name">${item.name}</p>
+      <p class="item-rate">${item.rate}% 드랍</p>
+      <div class="counter">
+        <button data-minus="${item.id}">−</button>
+        <div class="display">${item.count}</div>
+        <button class="plus" data-plus="${item.id}">+</button>
+      </div>
+      <p class="item-estimate">${estimateText}</p>
+    `;
+    itemsGrid.appendChild(card);
+  });
+  itemsGrid.querySelectorAll('[data-plus]').forEach(b => {
+    b.onclick = () => {
+      const it = items.find(i => i.id === parseInt(b.dataset.plus));
+      it.count++;
+      saveItems(); renderItems();
+    };
+  });
+  itemsGrid.querySelectorAll('[data-minus]').forEach(b => {
+    b.onclick = () => {
+      const it = items.find(i => i.id === parseInt(b.dataset.minus));
+      if (it.count > 0) { it.count--; saveItems(); renderItems(); }
+    };
+  });
+  itemsGrid.querySelectorAll('[data-edit]').forEach(b => {
+    b.onclick = () => openEdit(parseInt(b.dataset.edit));
+  });
+  let max = 0;
+  items.forEach(i => { const e = calcEstimate(i); if (e > max) max = e; });
+  totalKills.textContent = max.toLocaleString() + ' 마리';
+}
+
+document.getElementById('btn-add-item').onclick = () => {
+  items.push({ id: nextId++, name: '새 아이템', image: '', rate: 1, count: 0 });
+  saveItems(); renderItems();
+};
+
+// ===== 편집 모달 =====
+const modal = document.getElementById('edit-modal');
+let editingId = null;
+
+function openEdit(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('m-name').value = item.name;
+  document.getElementById('m-image').value = item.image;
+  document.getElementById('m-rate').value = item.rate;
+  document.getElementById('m-count').value = item.count;
+  modal.classList.remove('hidden');
+}
+document.getElementById('m-cancel').onclick = () => modal.classList.add('hidden');
+document.getElementById('m-delete').onclick = () => {
+  items = items.filter(i => i.id !== editingId);
+  saveItems(); renderItems();
+  modal.classList.add('hidden');
+};
+document.getElementById('m-save').onclick = () => {
+  const item = items.find(i => i.id === editingId);
+  item.name = document.getElementById('m-name').value || '이름 없음';
+  item.image = document.getElementById('m-image').value.trim();
+  item.rate = parseFloat(document.getElementById('m-rate').value) || 0;
+  item.count = parseInt(document.getElementById('m-count').value) || 0;
+  saveItems(); renderItems();
+  modal.classList.add('hidden');
+};
+
+// ===== 타이머 =====
+const expStart = document.getElementById('exp-start');
+const expEnd = document.getElementById('exp-end');
+const locationName = document.getElementById('location-name');
+const timerClock = document.getElementById('timer-clock');
+const timerStatus = document.getElementById('timer-status');
+const liveStats = document.getElementById('live-stats');
+const liveExp = document.getElementById('live-exp');
+const liveItems = document.getElementById('live-items');
+const btnStart = document.getElementById('btn-start');
+const btnPause = document.getElementById('btn-pause');
+const btnStop = document.getElementById('btn-stop');
+const btnReset = document.getElementById('btn-reset');
+const savePrompt = document.getElementById('save-prompt');
+const saveSummary = document.getElementById('save-summary');
+
+let startTime = null;
+let elapsed = 0;
+let intervalId = null;
+let sessionStartItems = 0;
+let lastSession = null;
+
+function totalItemCount() {
+  return items.reduce((sum, i) => sum + (i.count || 0), 0);
+}
+function formatTime(ms) {
+  const total = Math.floor(ms / 1000);
+  const h = String(Math.floor(total / 3600)).padStart(2, '0');
+  const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+  const s = String(total % 60).padStart(2, '0');
+  return h + ':' + m + ':' + s;
+}
+function updateLive() {
+  elapsed = Date.now() - startTime;
+  timerClock.textContent = formatTime(elapsed);
+  const gained = Math.max(0, (parseInt(expEnd.value) || 0) - (parseInt(expStart.value) || 0));
+  const itemsGained = Math.max(0, totalItemCount() - sessionStartItems);
+  const hours = elapsed / 3600000;
+  if (hours > 0) {
+    liveStats.classList.remove('hidden');
+    liveExp.textContent = Math.round(gained / hours).toLocaleString() + ' (총 ' + gained.toLocaleString() + ')';
+    liveItems.textContent = itemsGained + '개 (시당 ' + Math.round(itemsGained / hours) + ')';
+  }
+}
+
+btnStart.onclick = () => {
+  if (elapsed === 0) sessionStartItems = totalItemCount();
+  startTime = Date.now() - elapsed;
+  intervalId = setInterval(updateLive, 1000);
+  btnStart.disabled = true;
+  btnPause.disabled = false;
+  btnStop.disabled = false;
+  timerStatus.textContent = '진행 중';
+  savePrompt.classList.add('hidden');
+};
+btnPause.onclick = () => {
+  if (intervalId) clearInterval(intervalId);
+  btnStart.disabled = false;
+  btnStart.textContent = '▶ 이어서';
+  btnPause.disabled = true;
+  timerStatus.textContent = '일시정지';
+};
+btnStop.onclick = () => {
+  if (intervalId) clearInterval(intervalId);
+  btnStart.disabled = false;
+  btnStart.textContent = '▶ 시작';
+  btnPause.disabled = true;
+  btnStop.disabled = true;
+  timerStatus.textContent = '종료';
+  const gained = Math.max(0, (parseInt(expEnd.value) || 0) - (parseInt(expStart.value) || 0));
+  const itemsGained = Math.max(0, totalItemCount() - sessionStartItems);
+  const hours = elapsed / 3600000;
+  lastSession = {
+    id: Date.now(),
+    date: new Date().toLocaleString('ko-KR'),
+    location: locationName.value || '이름 없음',
+    durationStr: formatTime(elapsed),
+    exp: gained,
+    items: itemsGained,
+    expPerHour: hours > 0 ? Math.round(gained / hours) : 0,
+    itemsPerHour: hours > 0 ? Math.round(itemsGained / hours) : 0
+  };
+  saveSummary.innerHTML = `<strong>${formatTime(elapsed)}</strong> 동안 경험치 <strong>${gained.toLocaleString()}</strong>, 아이템 <strong>${itemsGained}개</strong>`;
+  savePrompt.classList.remove('hidden');
+};
+btnReset.onclick = () => {
+  if (intervalId) clearInterval(intervalId);
+  elapsed = 0; startTime = null;
+  timerClock.textContent = '00:00:00';
+  timerStatus.textContent = '경과 시간';
+  btnStart.disabled = false;
+  btnStart.textContent = '▶ 시작';
+  btnPause.disabled = true;
+  btnStop.disabled = true;
+  liveStats.classList.add('hidden');
+  savePrompt.classList.add('hidden');
+};
+
+document.getElementById('btn-save').onclick = () => {
+  if (!lastSession) return;
+  const h = loadHistory();
+  h.unshift(lastSession);
+  localStorage.setItem('farming-history', JSON.stringify(h));
+  savePrompt.classList.add('hidden');
+};
+
+// ===== 기록 =====
+function loadHistory() {
+  const raw = localStorage.getItem('farming-history');
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch (e) { return []; }
+}
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty');
+  const h = loadHistory();
+  list.innerHTML = '';
+  if (h.length === 0) { empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  h.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'history-item';
+    row.innerHTML = `
+      <div class="header">
+        <div>
+          <p style="font-weight:500">${s.location}</p>
+          <p style="font-size:11px;color:#999">${s.date}</p>
+        </div>
+        <button data-del="${s.id}" class="small-btn">✕</button>
+      </div>
+      <div class="stats">
+        <div><span>시간</span><br><strong>${s.durationStr}</strong></div>
+        <div><span>경험치</span><br><strong>${s.exp.toLocaleString()}</strong></div>
+        <div><span>시당 경험</span><br><strong>${s.expPerHour.toLocaleString()}</strong></div>
+        <div><span>시당 아이템</span><br><strong>${s.itemsPerHour}</strong></div>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-del]').forEach(b => {
+    b.onclick = () => {
+      const id = parseInt(b.dataset.del);
+      const h = loadHistory().filter(s => s.id !== id);
+      localStorage.setItem('farming-history', JSON.stringify(h));
+      renderHistory();
+    };
+  });
+}
+document.getElementById('btn-clear-all').onclick = () => {
+  if (confirm('정말 모든 기록을 삭제할까요?')) {
+    localStorage.removeItem('farming-history');
+    renderHistory();
+  }
+};
+
+loadItems();
