@@ -1,6 +1,6 @@
 // ===== 구글 인증 =====
 // ⚠️ CLIENT_ID를 Google Cloud Console에서 발급받은 OAuth 2.0 Client ID로 교체하세요
-const CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com';
+const CLIENT_ID = '145578983739-5s09m3jrhesjm72ktr5mjsknfeo4697p.apps.googleusercontent.com';
 
 const OWNER_EMAILS = new Set([
   'sodkem93@gmail.com',
