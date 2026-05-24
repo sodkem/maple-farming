@@ -326,13 +326,11 @@ function calcEstimate(item) {
 }
 
 function updateTotalKills() {
-  const maxEst = (grp) => {
-    let m = 0;
-    items.filter(i => (i.group || 1) === grp).forEach(i => { const e = calcEstimate(i); if (e > m) m = e; });
-    return m;
-  };
-  const m1 = maxEst(1), m2 = maxEst(2);
-  const total = m1 > 0 && m2 > 0 ? Math.round((m1 + m2) / 2) : Math.max(m1, m2);
+  let total = 0;
+  items.filter(i => (i.group || 1) === 2).forEach(i => {
+    const e = calcEstimate(i);
+    if (e > total) total = e;
+  });
   totalKills.textContent = total.toLocaleString() + ' 마리';
 }
 
