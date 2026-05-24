@@ -358,8 +358,10 @@ function renderGroup(gridId, groupNum) {
   items.filter(i => (i.group || 1) === groupNum).forEach(item => {
     const card = document.createElement('div');
     card.className = 'item-card';
+    const LARGE_IMG = ['목비', '블루 문', '미스릴'];
+    const isLargeImg = LARGE_IMG.some(n => item.name.includes(n));
     const imgHtml = item.image
-      ? `<img src="${item.image}" alt="" onerror="this.style.display='none'">`
+      ? `<img src="${item.image}" alt="" onerror="this.style.display='none'"${isLargeImg ? ' class="img-full"' : ''}>`
       : `<span class="placeholder">🖼</span>`;
     const estimate = calcEstimate(item);
     const estimateText = item.rate > 0 && item.count > 0
