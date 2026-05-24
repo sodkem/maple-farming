@@ -181,7 +181,8 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
-.item-estimate { font-size: 10px; color: #666; text-align: center; }
+.item-estimate { font-size: 10px; color: #666; text-align: center; line-height: 1.6; }
+.est-avg { color: #aaa; }
 
 .summary {
   background: #f5f5f7;

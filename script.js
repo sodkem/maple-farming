@@ -338,17 +338,17 @@ function recomputeTotalKills() {
 
 // 아이템 확률 기대값 텍스트 (총 킬수 × 확률)
 function getEstimateText(item) {
+  if (!item.rate) return '확률 입력';
+  const avg = Math.round(100 / item.rate).toLocaleString();
+  const avgLine = `<span class="est-avg">${avg}마리/1개</span>`;
   if (currentTotalKills > 0) {
     const exp = currentTotalKills * (item.rate / 100);
-    if (exp < 0.01) return '기대 &lt;0.01개';
-    const fmt = exp >= 10
-      ? Math.round(exp).toLocaleString()
+    const expFmt = exp < 0.01 ? '&lt;0.01'
+      : exp >= 10 ? Math.round(exp).toLocaleString()
       : parseFloat(exp.toFixed(2)).toString();
-    return `기대 <strong>${fmt}</strong>개`;
+    return `기대 <strong>${expFmt}</strong>개<br>${avgLine}`;
   }
-  return item.rate > 0
-    ? `평균 ${Math.round(100 / item.rate).toLocaleString()}마리/개`
-    : '확률 입력';
+  return avgLine;
 }
 
 // 총 킬수 표시 + 모든 카드 기대값 동시 갱신 (입력 포커스 유지)
