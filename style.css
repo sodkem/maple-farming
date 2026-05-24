@@ -58,9 +58,9 @@ input[type="text"], input[type="number"]:not(.count-input) {
 .count-input {
   border: none;
   background: #f5f5f7;
-  border-radius: 8px;
-  padding: 6px 0;
-  font-size: 18px;
+  border-radius: 6px;
+  padding: 4px 0;
+  font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   font-family: inherit;
@@ -111,61 +111,61 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
 
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
   margin-bottom: 12px;
 }
 
 .item-card {
   background: white;
   border: 1px solid #e5e5e7;
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 .item-image-wrap {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
   background: #f5f5f7;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 .item-image-wrap img { width: 100%; height: 100%; object-fit: contain; }
-.item-image-wrap .placeholder { font-size: 28px; color: #c7c7cc; }
+.item-image-wrap .placeholder { font-size: 20px; color: #c7c7cc; }
 .item-edit {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
+  top: 3px;
+  right: 3px;
+  padding: 2px 5px;
+  font-size: 11px;
   background: white;
 }
-.item-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.item-rate { font-size: 11px; color: #999; }
+.item-name { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-rate { font-size: 10px; color: #999; }
 .counter {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
-.counter button { padding: 6px 10px; font-size: 16px; font-weight: 500; }
+.counter button { padding: 4px 6px; font-size: 13px; font-weight: 500; }
 .counter .plus { background: #e3f2ff; color: #007aff; border-color: #b3d9ff; }
 .counter .display {
   flex: 1;
   text-align: center;
   background: #f5f5f7;
-  border-radius: 8px;
-  padding: 6px 0;
-  font-size: 18px;
+  border-radius: 6px;
+  padding: 4px 0;
+  font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
-.item-estimate { font-size: 11px; color: #666; text-align: center; }
+.item-estimate { font-size: 10px; color: #666; text-align: center; }
 
 .summary {
   background: #f5f5f7;

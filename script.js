@@ -153,6 +153,8 @@ function renderLinks() {
     btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      const link = links.find(l => l.id === parseInt(btn.dataset.del));
+      if (!confirm(`"${link ? link.name : '이 링크'}"를 삭제할까요?`)) return;
       links = links.filter(l => l.id !== parseInt(btn.dataset.del));
       saveLinks(); renderLinks();
     };
