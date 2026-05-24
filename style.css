@@ -134,14 +134,21 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  background: #f5f5f7;
+  background: #ffffff;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
-.item-image-wrap img { width: 36%; height: 36%; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; }
+.item-image-wrap img {
+  width: 36%;
+  height: 36%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  mix-blend-mode: multiply;
+}
 .item-image-wrap .placeholder { font-size: 20px; color: #c7c7cc; }
 .item-edit {
   position: absolute;
