@@ -620,3 +620,23 @@ body.is-owner .full-btn.owner-only { display: block !important; }
   width: 140px;
   flex: none;
 }
+
+/* ===== 경험치 계산기 ===== */
+.exp-calc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.exp-calc input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.exp-calc-result {
+  font-size: 15px;
+  font-weight: 700;
+  color: #007aff;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

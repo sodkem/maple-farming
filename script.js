@@ -704,3 +704,10 @@ if (headerNote) {
 wolmyoTab.init();
 kronosTab.init();
 
+// ===== 마스터크로노스 경험치 계산기 =====
+document.getElementById('k-exp-calc-input').oninput = () => {
+  const val = parseInt(document.getElementById('k-exp-calc-input').value) || 0;
+  const result = document.getElementById('k-exp-calc-result');
+  result.textContent = val > 0 ? '= ' + Math.round(val / 115).toLocaleString() + ' 마리' : '';
+};
+
