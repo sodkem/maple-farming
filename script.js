@@ -556,7 +556,6 @@ const kronosTab = createFarmTab({
   itemVersion: KRONOS_ITEM_VERSION, itemList: KRONOS_ITEM_LIST,
   defaultGroupNames: ['그룹 1', '그룹 2'],
   killsCalc: 'max',
-  maxGroups: 1,
 });
 
 // ===== 타이머 탭 =====
@@ -705,28 +704,3 @@ if (headerNote) {
 wolmyoTab.init();
 kronosTab.init();
 
-// ===== 마스터크로노스 EXP 누적 =====
-let kronosAccumExp = parseInt(localStorage.getItem('kronos-accum-exp') || '0');
-function updateKronosKills() {
-  const kills = Math.round(kronosAccumExp / 115);
-  const el = document.getElementById('k-accum-exp');
-  if (el) el.textContent = kronosAccumExp.toLocaleString();
-  kronosTab.setKillsOverride(kills);
-}
-document.getElementById('k-exp-add').onclick = () => {
-  const val = parseInt(document.getElementById('k-exp-input').value) || 0;
-  if (val > 0) {
-    kronosAccumExp += val;
-    localStorage.setItem('kronos-accum-exp', String(kronosAccumExp));
-    document.getElementById('k-exp-input').value = '';
-    updateKronosKills();
-  }
-};
-document.getElementById('k-exp-reset').onclick = () => {
-  if (confirm('누적 경험치를 초기화할까요?')) {
-    kronosAccumExp = 0;
-    localStorage.removeItem('kronos-accum-exp');
-    updateKronosKills();
-  }
-};
-updateKronosKills();
