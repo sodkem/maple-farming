@@ -57,8 +57,41 @@ window.addEventListener('load', () => {
     document.getElementById('auth-name').textContent = localStorage.getItem('owner_name') || '관리자';
     document.getElementById('auth-info').classList.remove('hidden');
     document.getElementById('google-signin-btn').classList.add('hidden');
+    // Firebase 설정 완료 시 최초 1회 기존 데이터 업로드
+    if (db && !localStorage.getItem('firebase-synced')) {
+      syncToFirestore();
+      localStorage.setItem('firebase-synced', 'true');
+    }
   }
 });
+
+// ===== Firebase 설정 =====
+// ⚠️ Firebase 콘솔에서 앱 등록 후 아래 값들을 교체하세요
+const firebaseConfig = {
+  apiKey: "AIzaSyBLTyn2f-GPMGsKqdjfwzoLHuTlqIaTfOE",
+  authDomain: "maple-farming-7db68.firebaseapp.com",
+  projectId: "maple-farming-7db68",
+  storageBucket: "maple-farming-7db68.firebasestorage.app",
+  messagingSenderId: "555969240207",
+  appId: "1:555969240207:web:f54ae55a74905e24d564fa"
+};
+
+let db;
+if (firebaseConfig.apiKey !== 'YOUR_API_KEY') {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+  } catch (e) {
+    console.log('Firebase 초기화 실패');
+  }
+}
+
+function syncToFirestore() {
+  if (!isOwner || !db) return;
+  const itemsForFirestore = items.map(({ image, ...rest }) => rest);
+  db.collection('farm').doc('items').set({ items: itemsForFirestore, nextId })
+    .catch(e => console.log('Firestore 저장 실패:', e));
+}
 
 // ===== 탭 전환 =====
 const tabs = document.querySelectorAll('.tab-btn');
@@ -94,7 +127,8 @@ const totalKills = document.getElementById('total-kills');
 let items = [];
 let nextId = 1;
 
-function loadItems() {
+async function loadItems() {
+  // 로컬 캐시로 즉시 렌더링
   const raw = localStorage.getItem('farming-items');
   if (raw) {
     try {
@@ -107,9 +141,29 @@ function loadItems() {
     items = [{ id: nextId++, name: '아이템 1', image: '', rate: 0.5, count: 0 }];
   }
   renderItems();
+
+  // Firestore에서 공유 데이터 동기화
+  if (db) {
+    try {
+      const snap = await db.collection('farm').doc('items').get();
+      if (snap.exists) {
+        const data = snap.data();
+        // 로컬에 저장된 이미지와 병합 (오너 기기에서만 이미지 표시)
+        const localItems = raw ? (JSON.parse(raw).items || []) : [];
+        const imageMap = {};
+        localItems.forEach(i => { if (i.image) imageMap[i.id] = i.image; });
+        items = (data.items || []).map(item => ({ ...item, image: imageMap[item.id] || '' }));
+        nextId = data.nextId || 1;
+        renderItems();
+      }
+    } catch (e) {
+      console.log('Firestore 로드 실패, 로컬 데이터 사용');
+    }
+  }
 }
 function saveItems() {
   localStorage.setItem('farming-items', JSON.stringify({ items, nextId }));
+  syncToFirestore();
 }
 
 function calcEstimate(item) {
