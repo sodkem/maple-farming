@@ -338,6 +338,48 @@ function updateTotalKills() {
 
 let dragSrcId = null;
 
+function attachDragHandlers(grid) {
+  if (!isOwner) return;
+  grid.addEventListener('dragstart', (e) => {
+    const card = e.target.closest('[data-item-id]');
+    if (!card) return;
+    dragSrcId = parseInt(card.dataset.itemId);
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => card.classList.add('dragging'), 0);
+  });
+  grid.addEventListener('dragend', () => {
+    dragSrcId = null;
+    grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+  });
+  grid.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const card = e.target.closest('[data-item-id]');
+    if (!card || parseInt(card.dataset.itemId) === dragSrcId) return;
+    grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+    card.classList.add('drag-over');
+  });
+  grid.addEventListener('dragleave', (e) => {
+    if (!grid.contains(e.relatedTarget)) {
+      grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+    }
+  });
+  grid.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const card = e.target.closest('[data-item-id]');
+    if (!card || !dragSrcId) return;
+    const targetId = parseInt(card.dataset.itemId);
+    if (targetId === dragSrcId) return;
+    grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+    const srcIdx = items.findIndex(i => i.id === dragSrcId);
+    const dstIdx = items.findIndex(i => i.id === targetId);
+    if (srcIdx === -1 || dstIdx === -1) return;
+    const [moved] = items.splice(srcIdx, 1);
+    items.splice(dstIdx, 0, moved);
+    saveItems();
+    renderItems();
+  });
+}
+
 function renderGroup(gridId, groupNum) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
@@ -345,40 +387,9 @@ function renderGroup(gridId, groupNum) {
   items.filter(i => (i.group || 1) === groupNum).forEach(item => {
     const card = document.createElement('div');
     card.className = 'item-card';
-
-    // ── 드래그앤드롭 (오너만) ──
     if (isOwner) {
       card.draggable = true;
-      card.ondragstart = (e) => {
-        dragSrcId = item.id;
-        e.dataTransfer.effectAllowed = 'move';
-        setTimeout(() => card.classList.add('dragging'), 0);
-      };
-      card.ondragend = () => {
-        dragSrcId = null;
-        document.querySelectorAll('.item-card').forEach(c => {
-          c.classList.remove('dragging', 'drag-over');
-        });
-      };
-      card.ondragover = (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        if (dragSrcId !== item.id) card.classList.add('drag-over');
-      };
-      card.ondragleave = () => card.classList.remove('drag-over');
-      card.ondrop = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        card.classList.remove('drag-over');
-        if (!dragSrcId || dragSrcId === item.id) return;
-        const srcIdx = items.findIndex(i => i.id === dragSrcId);
-        const dstIdx = items.findIndex(i => i.id === item.id);
-        if (srcIdx === -1 || dstIdx === -1) return;
-        const [moved] = items.splice(srcIdx, 1);
-        items.splice(dstIdx, 0, moved);
-        saveItems();
-        renderItems();
-      };
+      card.dataset.itemId = item.id;
     }
     const imgHtml = item.image
       ? `<img src="${item.image}" alt="" onerror="this.style.display='none'">`
@@ -450,6 +461,9 @@ function renderItems() {
   renderGroup('items-grid-1', 1);
   renderGroup('items-grid-2', 2);
   updateTotalKills();
+  // 드래그 핸들러는 grid 교체 후 매번 다시 붙임
+  attachDragHandlers(document.getElementById('items-grid-1'));
+  attachDragHandlers(document.getElementById('items-grid-2'));
 }
 
 document.getElementById('btn-add-item-1').onclick = () => {

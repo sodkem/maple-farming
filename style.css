@@ -128,6 +128,10 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
 }
 .item-card[draggable="true"] { cursor: grab; }
 .item-card[draggable="true"]:active { cursor: grabbing; }
+/* 자식 요소가 drag 이벤트 가로채지 않도록 */
+.item-card[draggable="true"] img,
+.item-card[draggable="true"] p,
+.item-card[draggable="true"] .item-estimate { pointer-events: none; }
 .item-card.dragging { opacity: 0.35; transform: scale(0.97); }
 .item-card.drag-over { border-color: #007aff; background: #e8f4ff; transform: scale(1.03); box-shadow: 0 4px 12px rgba(0,122,255,0.2); }
 .item-image-wrap {
