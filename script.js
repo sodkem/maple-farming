@@ -90,9 +90,41 @@ if (firebaseConfig.apiKey !== 'YOUR_API_KEY') {
 
 function syncToFirestore() {
   if (!isOwner || !db) return;
-  const itemsForFirestore = items.map(({ image, ...rest }) => rest);
+  const itemsForFirestore = items.map(item => {
+    const { image, ...rest } = item;
+    // URL 이미지는 Firestore에 저장, base64(data:)는 용량 문제로 제외
+    const imageToSave = image && !image.startsWith('data:') ? image : '';
+    return { ...rest, image: imageToSave };
+  });
   db.collection('farm').doc('items').set({ items: itemsForFirestore, nextId })
     .catch(e => console.log('Firestore 저장 실패:', e));
+}
+
+// ===== 기본 아이템 (월묘 드랍) =====
+const DEFAULT_MONSTER_ITEMS = [
+  { name: '골드 브레이스',       image: 'https://maplestory.io/api/gms/90/item/1082072/icon?resize=2', rate: 0.01,  count: 0, group: 1 },
+  { name: '블루 카운터',         image: 'https://maplestory.io/api/gms/90/item/1312007/icon?resize=2', rate: 0.008, count: 0, group: 1 },
+  { name: '노란색 우산',         image: 'https://maplestory.io/api/gms/90/item/1302016/icon?resize=2', rate: 0.008, count: 0, group: 1 },
+  { name: '파란색 모험가의 망토', image: 'https://maplestory.io/api/gms/90/item/1102001/icon?resize=2', rate: 0.006, count: 0, group: 1 },
+  { name: '투구 민첩 주문서 60%', image: 'https://maplestory.io/api/gms/90/item/2040029/icon?resize=2', rate: 0.006, count: 0, group: 1 },
+  { name: '아다만티움 타워 실드', image: 'https://maplestory.io/api/gms/90/item/1092014/icon?resize=2', rate: 0.005, count: 0, group: 1 },
+  { name: '신발 점프력 주문서 10%', image: 'https://maplestory.io/api/gms/90/item/2040705/icon?resize=2', rate: 0.003, count: 0, group: 1 },
+  { name: '네오자드',             image: 'https://maplestory.io/api/gms/90/item/1482006/icon?resize=2', rate: 0.002, count: 0, group: 1 },
+];
+
+function seedDefaultItems() {
+  if (!isOwner) return;
+  if (localStorage.getItem('farming-seeded-v1')) return;
+  const existingNames = new Set(items.map(i => i.name));
+  let added = false;
+  DEFAULT_MONSTER_ITEMS.forEach(di => {
+    if (!existingNames.has(di.name)) {
+      items.push({ id: nextId++, ...di });
+      added = true;
+    }
+  });
+  if (added) { saveItems(); renderItems(); }
+  localStorage.setItem('farming-seeded-v1', 'true');
 }
 
 // ===== 탭 전환 =====
@@ -276,7 +308,11 @@ async function loadItems() {
         const localItems = raw ? (JSON.parse(raw).items || []) : [];
         const imageMap = {};
         localItems.forEach(i => { if (i.image) imageMap[i.id] = i.image; });
-        items = (data.items || []).map(item => ({ ...item, image: imageMap[item.id] || '' }));
+        items = (data.items || []).map(item => ({
+          ...item,
+          // 로컬 base64 이미지 우선, 없으면 Firestore의 URL 이미지 사용
+          image: imageMap[item.id] || item.image || ''
+        }));
         nextId = data.nextId || 1;
         renderItems();
       }
@@ -284,6 +320,8 @@ async function loadItems() {
       console.log('Firestore 로드 실패, 로컬 데이터 사용');
     }
   }
+  // 오너 최초 방문 시 기본 아이템 추가
+  seedDefaultItems();
 }
 function saveItems() {
   localStorage.setItem('farming-items', JSON.stringify({ items, nextId }));
