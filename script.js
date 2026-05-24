@@ -112,24 +112,37 @@ const DEFAULT_MONSTER_ITEMS = [
   { name: '네오자드',               image: 'https://maplestory.io/api/gms/90/item/1482006/icon', rate: 0.002, count: 0, group: 1 },
 ];
 
+const DEFAULT_MONSTER_ITEMS_V3 = [
+  { name: '목비 표창',     image: 'https://maplestory.io/api/gms/90/item/2070002/icon', rate: 0.01, count: 0, group: 1 },
+  { name: '블루 문',       image: 'https://maplestory.io/api/gms/90/item/1032011/icon', rate: 0.01, count: 0, group: 1 },
+  { name: '미스릴 티거',   image: 'https://maplestory.io/api/gms/90/item/1072112/icon', rate: 0.01, count: 0, group: 1 },
+  { name: '옐로우 하프슈즈', image: 'https://maplestory.io/api/gms/90/item/1072109/icon', rate: 0.01, count: 0, group: 1 },
+];
+
 function seedDefaultItems() {
   if (!isOwner) return;
-  if (localStorage.getItem('farming-seeded-v2')) return;
+  const allDefaults = [...DEFAULT_MONSTER_ITEMS, ...DEFAULT_MONSTER_ITEMS_V3];
+  const needsV2 = !localStorage.getItem('farming-seeded-v2');
+  const needsV3 = !localStorage.getItem('farming-seeded-v3');
+  if (!needsV2 && !needsV3) return;
+
   const existingNames = new Map(items.map(i => [i.name, i]));
   let changed = false;
-  DEFAULT_MONSTER_ITEMS.forEach(di => {
+
+  const batch = needsV2 ? allDefaults : DEFAULT_MONSTER_ITEMS_V3;
+  batch.forEach(di => {
     const existing = existingNames.get(di.name);
     if (!existing) {
       items.push({ id: nextId++, ...di });
       changed = true;
     } else if (existing.image !== di.image) {
-      // 이전 URL → 새 URL로 업데이트
       existing.image = di.image;
       changed = true;
     }
   });
   if (changed) { saveItems(); renderItems(); }
   localStorage.setItem('farming-seeded-v2', 'true');
+  localStorage.setItem('farming-seeded-v3', 'true');
 }
 
 // ===== 탭 전환 =====
@@ -358,7 +371,7 @@ function renderGroup(gridId, groupNum) {
   items.filter(i => (i.group || 1) === groupNum).forEach(item => {
     const card = document.createElement('div');
     card.className = 'item-card';
-    const LARGE_IMG = ['목비', '블루 문', '미스릴'];
+    const LARGE_IMG = ['목비', '블루 문', '미스릴', '옐로우'];
     const isLargeImg = LARGE_IMG.some(n => item.name.includes(n));
     const imgHtml = item.image
       ? `<img src="${item.image}" alt="" onerror="this.style.display='none'"${isLargeImg ? ' class="img-full"' : ''}>`
