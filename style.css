@@ -136,7 +136,7 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
   justify-content: center;
   overflow: hidden;
 }
-.item-image-wrap img { width: 100%; height: 100%; object-fit: contain; }
+.item-image-wrap img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; }
 .item-image-wrap .placeholder { font-size: 20px; color: #c7c7cc; }
 .item-edit {
   position: absolute;

@@ -102,29 +102,34 @@ function syncToFirestore() {
 
 // ===== 기본 아이템 (월묘 드랍) =====
 const DEFAULT_MONSTER_ITEMS = [
-  { name: '골드 브레이스',       image: 'https://maplestory.io/api/gms/90/item/1082072/icon?resize=2', rate: 0.01,  count: 0, group: 1 },
-  { name: '블루 카운터',         image: 'https://maplestory.io/api/gms/90/item/1312007/icon?resize=2', rate: 0.008, count: 0, group: 1 },
-  { name: '노란색 우산',         image: 'https://maplestory.io/api/gms/90/item/1302016/icon?resize=2', rate: 0.008, count: 0, group: 1 },
-  { name: '파란색 모험가의 망토', image: 'https://maplestory.io/api/gms/90/item/1102001/icon?resize=2', rate: 0.006, count: 0, group: 1 },
-  { name: '투구 민첩 주문서 60%', image: 'https://maplestory.io/api/gms/90/item/2040029/icon?resize=2', rate: 0.006, count: 0, group: 1 },
-  { name: '아다만티움 타워 실드', image: 'https://maplestory.io/api/gms/90/item/1092014/icon?resize=2', rate: 0.005, count: 0, group: 1 },
-  { name: '신발 점프력 주문서 10%', image: 'https://maplestory.io/api/gms/90/item/2040705/icon?resize=2', rate: 0.003, count: 0, group: 1 },
-  { name: '네오자드',             image: 'https://maplestory.io/api/gms/90/item/1482006/icon?resize=2', rate: 0.002, count: 0, group: 1 },
+  { name: '골드 브레이스',         image: 'https://maplestory.io/api/gms/90/item/1082072/icon', rate: 0.01,  count: 0, group: 1 },
+  { name: '블루 카운터',           image: 'https://maplestory.io/api/gms/90/item/1312007/icon', rate: 0.008, count: 0, group: 1 },
+  { name: '노란색 우산',           image: 'https://maplestory.io/api/gms/90/item/1302016/icon', rate: 0.008, count: 0, group: 1 },
+  { name: '파란색 모험가의 망토',   image: 'https://maplestory.io/api/gms/90/item/1102001/icon', rate: 0.006, count: 0, group: 1 },
+  { name: '투구 민첩 주문서 60%',  image: 'https://maplestory.io/api/gms/90/item/2040029/icon', rate: 0.006, count: 0, group: 1 },
+  { name: '아다만티움 타워 실드',   image: 'https://maplestory.io/api/gms/90/item/1092014/icon', rate: 0.005, count: 0, group: 1 },
+  { name: '신발 점프력 주문서 10%', image: 'https://maplestory.io/api/gms/90/item/2040705/icon', rate: 0.003, count: 0, group: 1 },
+  { name: '네오자드',               image: 'https://maplestory.io/api/gms/90/item/1482006/icon', rate: 0.002, count: 0, group: 1 },
 ];
 
 function seedDefaultItems() {
   if (!isOwner) return;
-  if (localStorage.getItem('farming-seeded-v1')) return;
-  const existingNames = new Set(items.map(i => i.name));
-  let added = false;
+  if (localStorage.getItem('farming-seeded-v2')) return;
+  const existingNames = new Map(items.map(i => [i.name, i]));
+  let changed = false;
   DEFAULT_MONSTER_ITEMS.forEach(di => {
-    if (!existingNames.has(di.name)) {
+    const existing = existingNames.get(di.name);
+    if (!existing) {
       items.push({ id: nextId++, ...di });
-      added = true;
+      changed = true;
+    } else if (existing.image !== di.image) {
+      // 이전 URL → 새 URL로 업데이트
+      existing.image = di.image;
+      changed = true;
     }
   });
-  if (added) { saveItems(); renderItems(); }
-  localStorage.setItem('farming-seeded-v1', 'true');
+  if (changed) { saveItems(); renderItems(); }
+  localStorage.setItem('farming-seeded-v2', 'true');
 }
 
 // ===== 탭 전환 =====
