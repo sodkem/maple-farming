@@ -250,24 +250,68 @@ const qtStartBtn = document.getElementById('qt-start');
 const qtPauseBtn = document.getElementById('qt-pause');
 const qtResetBtn = document.getElementById('qt-reset');
 
+function qtSaveState() {
+  if (qtStart !== null) {
+    localStorage.setItem('qt-start-ts', String(qtStart)); // 실행 중
+  } else {
+    localStorage.removeItem('qt-start-ts');
+    localStorage.setItem('qt-elapsed', String(qtElapsed)); // 일시정지
+  }
+}
+function qtClearState() {
+  localStorage.removeItem('qt-start-ts');
+  localStorage.removeItem('qt-elapsed');
+}
+function qtStartInterval() {
+  qtInterval = setInterval(() => {
+    qtElapsed = Date.now() - qtStart;
+    qtClock.textContent = formatTime(qtElapsed);
+    localStorage.setItem('qt-start-ts', String(qtStart)); // 주기적 갱신
+  }, 500);
+}
+
 qtStartBtn.onclick = () => {
   qtStart = Date.now() - qtElapsed;
-  qtInterval = setInterval(() => { qtElapsed = Date.now() - qtStart; qtClock.textContent = formatTime(qtElapsed); }, 500);
+  qtSaveState();
+  qtStartInterval();
   qtStartBtn.disabled = true; qtPauseBtn.disabled = false;
   qtStartBtn.textContent = '▶ 시작';
 };
 qtPauseBtn.onclick = () => {
   clearInterval(qtInterval);
+  qtStart = null;
+  qtSaveState();
   qtStartBtn.disabled = false; qtPauseBtn.disabled = true;
   qtStartBtn.textContent = '▶ 이어서';
 };
 qtResetBtn.onclick = () => {
   clearInterval(qtInterval);
   qtElapsed = 0; qtStart = null;
+  qtClearState();
   qtClock.textContent = '00:00:00';
   qtStartBtn.disabled = false; qtPauseBtn.disabled = true;
   qtStartBtn.textContent = '▶ 시작';
 };
+
+// 새로고침 후 타이머 상태 복원
+function loadQtState() {
+  const savedStartTs = parseInt(localStorage.getItem('qt-start-ts') || '0');
+  const savedElapsed = parseInt(localStorage.getItem('qt-elapsed') || '0');
+  if (savedStartTs > 0) {
+    // 실행 중이었음 → 끊긴 시간 포함해서 이어서 실행
+    qtStart = savedStartTs;
+    qtElapsed = Date.now() - qtStart;
+    qtClock.textContent = formatTime(qtElapsed);
+    qtStartInterval();
+    qtStartBtn.disabled = true;
+    qtPauseBtn.disabled = false;
+  } else if (savedElapsed > 0) {
+    // 일시정지 상태였음 → 그 시간부터 이어서 가능
+    qtElapsed = savedElapsed;
+    qtClock.textContent = formatTime(qtElapsed);
+    qtStartBtn.textContent = '▶ 이어서';
+  }
+}
 
 // ===== 아이템 관리 =====
 const totalKills = document.getElementById('total-kills');
@@ -774,6 +818,28 @@ document.getElementById('btn-clear-all').onclick = () => {
   }
 };
 
+// ===== 메모장 =====
+const notepadTab   = document.getElementById('notepad-tab');
+const notepadPanel = document.getElementById('notepad-panel');
+const notepadArea  = document.getElementById('notepad-area');
+const notepadClose = document.getElementById('notepad-close');
+
+notepadArea.value = localStorage.getItem('farming-memo') || '';
+
+notepadTab.onclick = () => {
+  notepadPanel.classList.remove('notepad-collapsed');
+  notepadTab.classList.add('hidden');
+  notepadArea.focus();
+};
+notepadClose.onclick = () => {
+  notepadPanel.classList.add('notepad-collapsed');
+  notepadTab.classList.remove('hidden');
+};
+notepadArea.oninput = () => {
+  localStorage.setItem('farming-memo', notepadArea.value);
+};
+
 loadItems();
 loadLinks();
 loadGroupNames();
+loadQtState();
