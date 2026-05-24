@@ -628,8 +628,8 @@ body.is-owner .full-btn.owner-only { display: block !important; }
   gap: 10px;
   margin-top: 12px;
 }
-.exp-calc input {
-  width: 100px;
+#k-exp-calc-input {
+  width: 100px !important;
   flex: none;
   padding: 6px 10px;
   font-size: 13px;
