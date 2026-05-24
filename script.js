@@ -145,6 +145,17 @@ function seedDefaultItems() {
   localStorage.setItem('farming-seeded-v3', 'true');
 }
 
+function cleanupDuplicates() {
+  if (!isOwner) return;
+  if (localStorage.getItem('farming-cleanup-v1')) return;
+  // v3 시딩에서 기존 아이템과 이름이 달라 중복 추가된 항목 제거
+  const toRemove = new Set(['목비 표창', '블루 문', '옐로우 하프슈즈']);
+  const before = items.length;
+  items = items.filter(i => !toRemove.has(i.name));
+  if (items.length !== before) { saveItems(); renderItems(); }
+  localStorage.setItem('farming-cleanup-v1', 'true');
+}
+
 // ===== 탭 전환 =====
 const tabs = document.querySelectorAll('.tab-btn');
 const panels = {
@@ -340,6 +351,8 @@ async function loadItems() {
   }
   // 오너 최초 방문 시 기본 아이템 추가
   seedDefaultItems();
+  // v3 시딩에서 중복 추가된 아이템 정리
+  cleanupDuplicates();
 }
 function saveItems() {
   localStorage.setItem('farming-items', JSON.stringify({ items, nextId }));
