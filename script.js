@@ -327,13 +327,15 @@ function calcEstimate(item) {
 
 let currentTotalKills = 0;
 
-// 그룹2 최대 추정값 계산
+// 그룹2의 은의 원석·사파이어의 원석 두 아이템 평균으로 계산
 function recomputeTotalKills() {
   currentTotalKills = 0;
-  items.filter(i => (i.group || 1) === 2).forEach(i => {
-    const e = calcEstimate(i);
-    if (e > currentTotalKills) currentTotalKills = e;
-  });
+  const TARGET_NAMES = ['은의 원석', '사파이어의 원석'];
+  const targetItems = items.filter(i => (i.group || 1) === 2 && TARGET_NAMES.includes(i.name));
+  const estimates = targetItems.map(calcEstimate).filter(e => e > 0);
+  if (estimates.length > 0) {
+    currentTotalKills = Math.round(estimates.reduce((a, b) => a + b, 0) / estimates.length);
+  }
 }
 
 // 아이템 확률 기대값 텍스트 (총 킬수 × 확률)
@@ -351,9 +353,19 @@ function getEstimateText(item) {
   return avgLine;
 }
 
+// 그룹1 아이템 개수 합계 표시
+function updateGroup1Sum() {
+  const el = document.getElementById('group1-count-sum');
+  if (!el) return;
+  const sum = items.filter(i => (i.group || 1) === 1).reduce((a, i) => a + (i.count || 0), 0);
+  el.textContent = sum > 0 ? `합계 ${sum.toLocaleString()}개` : '';
+  el.style.display = sum > 0 ? '' : 'none';
+}
+
 // 총 킬수 표시 + 모든 카드 기대값 동시 갱신 (입력 포커스 유지)
 function updateAllEstimates() {
   recomputeTotalKills();
+  updateGroup1Sum();
   totalKills.textContent = currentTotalKills.toLocaleString() + ' 마리';
   items.forEach(item => {
     const el = document.querySelector(`[data-est-id="${item.id}"]`);
@@ -477,6 +489,7 @@ function renderItems() {
   recomputeTotalKills(); // 카드 렌더 전에 먼저 계산
   renderGroup('items-grid-1', 1);
   renderGroup('items-grid-2', 2);
+  updateGroup1Sum();
   totalKills.textContent = currentTotalKills.toLocaleString() + ' 마리';
   // 드래그 핸들러는 grid 교체 후 매번 다시 붙임
   attachDragHandlers(document.getElementById('items-grid-1'));

@@ -337,7 +337,16 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
   margin-bottom: 12px;
 }
 .item-group { min-width: 0; }
-.group-header { margin-bottom: 6px; }
+.group-header { margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.group-count-sum {
+  font-size: 11px;
+  font-weight: 700;
+  color: #007aff;
+  background: #e3f2ff;
+  border-radius: 10px;
+  padding: 3px 10px;
+  letter-spacing: 0.01em;
+}
 .group-name {
   display: inline-block;
   font-size: 11px;
