@@ -629,7 +629,8 @@ body.is-owner .full-btn.owner-only { display: block !important; }
   margin-top: 12px;
 }
 .exp-calc input {
-  flex: 1;
+  width: 100px;
+  flex: none;
   padding: 6px 10px;
   font-size: 13px;
 }

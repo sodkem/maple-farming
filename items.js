@@ -27,7 +27,7 @@ const ITEM_LIST = [
 
 // ===== 마스터크로노스 아이템 목록 (잃어버린 시간의 길) =====
 // 아이템 추가 시 KRONOS_ITEM_VERSION + 1
-const KRONOS_ITEM_VERSION = 4;
+const KRONOS_ITEM_VERSION = 5;
 const KRONOS_ITEM_LIST = [
   // ── 그룹 1: 잃시길 드랍 ──
   { name: '브라운 피에뜨',              rate: 0.01,  group: 1, imgId: '1040079' },
@@ -49,5 +49,5 @@ const KRONOS_ITEM_LIST = [
   { name: '스태프 마력 주문서 10%',      rate: 0.004, group: 1, imgId: '2043802' },
 
   // ── 그룹 2: 기준 아이템 ──
-  { name: '엘릭서',                     rate: 1,     group: 2, imgId: '2000006' },
+  { name: '엘릭서',                     rate: 1,     group: 2, imgId: '2000004' },
 ];
