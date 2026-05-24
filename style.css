@@ -17,8 +17,28 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-h1 { font-size: 22px; margin-bottom: 20px; }
+h1 { font-size: 22px; margin-bottom: 6px; }
 h3 { font-size: 16px; margin-bottom: 16px; }
+
+.header-note {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 16px;
+  min-height: 20px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  outline: none;
+  cursor: text;
+  line-height: 1.5;
+  transition: background 0.15s;
+}
+.header-note:hover { background: #f5f5f7; }
+.header-note:focus { background: #f5f5f7; }
+.header-note:empty::before {
+  content: attr(data-placeholder);
+  color: #ccc;
+  pointer-events: none;
+}
 label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
 p { line-height: 1.5; }
 

@@ -24,3 +24,10 @@ const ITEM_LIST = [
   { name: '지혜의 크리스탈 원석',   rate: 0.1,   group: 2, imgId: '4004001' },
   { name: '마법의 돌',              rate: 0.08,  group: 2, imgId: '4006000' },
 ];
+
+// ===== 마스터크로노스 아이템 목록 =====
+// 아이템 추가 시 KRONOS_ITEM_VERSION + 1
+const KRONOS_ITEM_VERSION = 1;
+const KRONOS_ITEM_LIST = [
+  // 여기에 마스터크로노스 드랍 아이템 추가
+];

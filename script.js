@@ -1,18 +1,13 @@
 // ===== 구글 인증 =====
-// ⚠️ CLIENT_ID를 Google Cloud Console에서 발급받은 OAuth 2.0 Client ID로 교체하세요
 const CLIENT_ID = '145578983739-5s09m3jrhesjm72ktr5mjsknfeo4697p.apps.googleusercontent.com';
-
 const OWNER_EMAILS = new Set([
   'sodkem93@gmail.com',
   'eliceyong93@gmail.com',
   'sodkem932@gmail.com',
 ]);
-
 let isOwner = localStorage.getItem('owner_logged_in') === 'true';
 
-function applyAuthState() {
-  document.body.classList.toggle('is-owner', isOwner);
-}
+function applyAuthState() { document.body.classList.toggle('is-owner', isOwner); }
 applyAuthState();
 
 function parseJwt(token) {
@@ -24,10 +19,7 @@ function parseJwt(token) {
 
 function handleCredentialResponse(response) {
   const payload = parseJwt(response.credential);
-  if (!OWNER_EMAILS.has(payload.email)) {
-    alert('이 계정에는 편집 권한이 없습니다.');
-    return;
-  }
+  if (!OWNER_EMAILS.has(payload.email)) { alert('이 계정에는 편집 권한이 없습니다.'); return; }
   isOwner = true;
   localStorage.setItem('owner_logged_in', 'true');
   localStorage.setItem('owner_name', payload.name || payload.email);
@@ -35,9 +27,8 @@ function handleCredentialResponse(response) {
   document.getElementById('auth-info').classList.remove('hidden');
   document.getElementById('google-signin-btn').classList.add('hidden');
   applyAuthState();
-  renderItems();
-  renderLinks();
-  initGroupNameEditing();
+  wolmyoTab.renderItems(); wolmyoTab.renderLinks(); wolmyoTab.initGroupNameEditing();
+  kronosTab.renderItems(); kronosTab.renderLinks(); kronosTab.initGroupNameEditing();
 }
 
 function initGoogleAuth() {
@@ -59,16 +50,10 @@ window.addEventListener('load', () => {
     document.getElementById('auth-name').textContent = localStorage.getItem('owner_name') || '관리자';
     document.getElementById('auth-info').classList.remove('hidden');
     document.getElementById('google-signin-btn').classList.add('hidden');
-    // Firebase 설정 완료 시 최초 1회 기존 데이터 업로드
-    if (db && !localStorage.getItem('firebase-synced')) {
-      syncToFirestore();
-      localStorage.setItem('firebase-synced', 'true');
-    }
   }
 });
 
-// ===== Firebase 설정 =====
-// ⚠️ Firebase 콘솔에서 앱 등록 후 아래 값들을 교체하세요
+// ===== Firebase =====
 const firebaseConfig = {
   apiKey: "AIzaSyBLTyn2f-GPMGsKqdjfwzoLHuTlqIaTfOE",
   authDomain: "maple-farming-7db68.firebaseapp.com",
@@ -77,482 +62,31 @@ const firebaseConfig = {
   messagingSenderId: "555969240207",
   appId: "1:555969240207:web:f54ae55a74905e24d564fa"
 };
-
 let db;
-if (firebaseConfig.apiKey !== 'YOUR_API_KEY') {
-  try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-  } catch (e) {
-    console.log('Firebase 초기화 실패');
-  }
-}
-
-function syncToFirestore() {
-  if (!isOwner || !db) return;
-  const itemsForFirestore = items.map(item => {
-    const { image, ...rest } = item;
-    // URL 이미지는 Firestore에 저장, base64(data:)는 용량 문제로 제외
-    const imageToSave = image && !image.startsWith('data:') ? image : '';
-    return { ...rest, image: imageToSave };
-  });
-  db.collection('farm').doc('items').set({ items: itemsForFirestore, nextId })
-    .catch(e => console.log('Firestore 저장 실패:', e));
-}
-
-// ===== 초기 아이템 세팅 (items.js에서 로드) =====
-// 아이템 추가/수정은 items.js 파일만 건드리면 됩니다
-
-function resetToFreshItems() {
-  if (!isOwner) return;
-  const savedVersion = parseInt(localStorage.getItem('farming-item-version') || '0');
-  if (savedVersion >= ITEM_VERSION) return;
-  items = ITEM_LIST.map((di, idx) => ({
-    id: idx + 1,
-    name: di.name,
-    image: `https://maplestory.io/api/gms/90/item/${di.imgId}/icon`,
-    rate: di.rate,
-    count: 0,
-    group: di.group,
-  }));
-  nextId = items.length + 1;
-  saveItems();
-  renderItems();
-  localStorage.setItem('farming-item-version', String(ITEM_VERSION));
-}
+try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e) {}
 
 // ===== 탭 전환 =====
-const tabs = document.querySelectorAll('.tab-btn');
-const panels = {
-  items: document.getElementById('panel-items'),
-  timer: document.getElementById('panel-timer'),
-  history: document.getElementById('panel-history')
-};
-tabs.forEach(t => {
+document.querySelectorAll('.tab-btn').forEach(t => {
   t.onclick = () => {
-    tabs.forEach(o => o.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(o => o.classList.remove('active'));
     t.classList.add('active');
-    Object.values(panels).forEach(p => p.classList.add('hidden'));
-    panels[t.dataset.tab].classList.remove('hidden');
+    document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById(`panel-${t.dataset.tab}`).classList.remove('hidden');
     if (t.dataset.tab === 'history') renderHistory();
   };
 });
 
-// ===== 그룹 이름 관리 =====
-let groupNames = ['파밍 1', '파밍 2'];
-
-function loadGroupNames() {
-  const raw = localStorage.getItem('farming-groups');
-  if (raw) { try { groupNames = JSON.parse(raw); } catch(e) {} }
-  applyGroupNames();
-  if (db) {
-    db.collection('farm').doc('groups').get().then(snap => {
-      if (snap.exists && snap.data().names) { groupNames = snap.data().names; applyGroupNames(); }
-    }).catch(() => {});
-  }
-}
-function saveGroupNames() {
-  localStorage.setItem('farming-groups', JSON.stringify(groupNames));
-  if (db) db.collection('farm').doc('groups').set({ names: groupNames }).catch(() => {});
-}
-function applyGroupNames() {
-  [0, 1].forEach(idx => {
-    const el = document.getElementById(`group-name-${idx + 1}`);
-    if (el) el.textContent = groupNames[idx] || `파밍 ${idx + 1}`;
-  });
-}
-function initGroupNameEditing() {
-  if (!isOwner) return;
-  [0, 1].forEach(idx => {
-    const el = document.getElementById(`group-name-${idx + 1}`);
-    if (!el || el.dataset.editable) return;
-    el.dataset.editable = 'true';
-    el.classList.add('editable-name');
-    el.onclick = () => {
-      const n = prompt('그룹 이름 변경:', groupNames[idx]);
-      if (n !== null && n.trim()) { groupNames[idx] = n.trim(); el.textContent = groupNames[idx]; saveGroupNames(); }
-    };
-  });
+// ===== 유틸 =====
+function formatTime(ms) {
+  const t = Math.floor(ms / 1000);
+  return [Math.floor(t / 3600), Math.floor((t % 3600) / 60), t % 60]
+    .map(n => String(n).padStart(2, '0')).join(':');
 }
 
-// ===== 링크 관리 =====
-let links = [];
-let nextLinkId = 1;
-
-function loadLinks() {
-  const raw = localStorage.getItem('farming-links');
-  if (raw) {
-    try { const d = JSON.parse(raw); links = d.links || []; nextLinkId = d.nextId || 1; } catch(e) {}
-  }
-  if (links.length === 0) {
-    links = [{ id: nextLinkId++, name: '까막산 입구', url: 'https://mashop.kr/jari/%EB%A3%A8%EB%8D%94%EC%8A%A4%ED%98%B8%EC%88%98%3A%20%EA%B9%8C%EB%A7%89%EC%82%B0%20%EC%9E%85%EA%B5%AC' }];
-    saveLinks();
-  }
-  renderLinks();
-  if (db) {
-    db.collection('farm').doc('links').get().then(snap => {
-      if (snap.exists) { const d = snap.data(); links = d.links || []; nextLinkId = d.nextId || 1; renderLinks(); }
-    }).catch(() => {});
-  }
-}
-
-function saveLinks() {
-  localStorage.setItem('farming-links', JSON.stringify({ links, nextId: nextLinkId }));
-  if (isOwner && db) db.collection('farm').doc('links').set({ links, nextId: nextLinkId }).catch(() => {});
-}
-
-function renderLinks() {
-  const list = document.getElementById('links-list');
-  if (!list) return;
-  list.innerHTML = '';
-  links.forEach(link => {
-    const tag = document.createElement('a');
-    tag.className = 'link-tag';
-    tag.href = link.url;
-    tag.target = '_blank';
-    tag.innerHTML = `<span>${link.name}</span>${isOwner ? `<button class="link-del" data-del="${link.id}">×</button>` : ''}`;
-    list.appendChild(tag);
-  });
-  list.querySelectorAll('.link-del').forEach(btn => {
-    btn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const link = links.find(l => l.id === parseInt(btn.dataset.del));
-      if (!confirm(`"${link ? link.name : '이 링크'}"를 삭제할까요?`)) return;
-      links = links.filter(l => l.id !== parseInt(btn.dataset.del));
-      saveLinks(); renderLinks();
-    };
-  });
-}
-
-document.getElementById('btn-add-link').onclick = () => {
-  document.getElementById('link-form').classList.remove('hidden');
-  document.getElementById('link-name').value = '';
-  document.getElementById('link-url').value = '';
-  document.getElementById('link-name').focus();
-};
-document.getElementById('link-cancel').onclick = () => document.getElementById('link-form').classList.add('hidden');
-document.getElementById('link-save').onclick = () => {
-  const name = document.getElementById('link-name').value.trim();
-  let url = document.getElementById('link-url').value.trim();
-  if (!name || !url) return;
-  if (!url.startsWith('http')) url = 'https://' + url;
-  links.push({ id: nextLinkId++, name, url });
-  saveLinks(); renderLinks();
-  document.getElementById('link-form').classList.add('hidden');
-};
-document.getElementById('link-url').onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('link-save').click(); };
-
-// ===== 아이템탭 빠른 타이머 =====
-let qtStart = null, qtElapsed = 0, qtInterval = null;
-const qtClock = document.getElementById('qt-clock');
-const qtStartBtn = document.getElementById('qt-start');
-const qtPauseBtn = document.getElementById('qt-pause');
-const qtResetBtn = document.getElementById('qt-reset');
-
-function qtSaveState() {
-  if (qtStart !== null) {
-    localStorage.setItem('qt-start-ts', String(qtStart)); // 실행 중
-  } else {
-    localStorage.removeItem('qt-start-ts');
-    localStorage.setItem('qt-elapsed', String(qtElapsed)); // 일시정지
-  }
-}
-function qtClearState() {
-  localStorage.removeItem('qt-start-ts');
-  localStorage.removeItem('qt-elapsed');
-}
-function qtStartInterval() {
-  qtInterval = setInterval(() => {
-    qtElapsed = Date.now() - qtStart;
-    qtClock.textContent = formatTime(qtElapsed);
-    localStorage.setItem('qt-start-ts', String(qtStart)); // 주기적 갱신
-  }, 500);
-}
-
-qtStartBtn.onclick = () => {
-  qtStart = Date.now() - qtElapsed;
-  qtSaveState();
-  qtStartInterval();
-  qtStartBtn.disabled = true; qtPauseBtn.disabled = false;
-  qtStartBtn.textContent = '▶ 시작';
-};
-qtPauseBtn.onclick = () => {
-  clearInterval(qtInterval);
-  qtStart = null;
-  qtSaveState();
-  qtStartBtn.disabled = false; qtPauseBtn.disabled = true;
-  qtStartBtn.textContent = '▶ 이어서';
-};
-qtResetBtn.onclick = () => {
-  clearInterval(qtInterval);
-  qtElapsed = 0; qtStart = null;
-  qtClearState();
-  qtClock.textContent = '00:00:00';
-  qtStartBtn.disabled = false; qtPauseBtn.disabled = true;
-  qtStartBtn.textContent = '▶ 시작';
-};
-
-// 새로고침 후 타이머 상태 복원
-function loadQtState() {
-  const savedStartTs = parseInt(localStorage.getItem('qt-start-ts') || '0');
-  const savedElapsed = parseInt(localStorage.getItem('qt-elapsed') || '0');
-  if (savedStartTs > 0) {
-    // 실행 중이었음 → 끊긴 시간 포함해서 이어서 실행
-    qtStart = savedStartTs;
-    qtElapsed = Date.now() - qtStart;
-    qtClock.textContent = formatTime(qtElapsed);
-    qtStartInterval();
-    qtStartBtn.disabled = true;
-    qtPauseBtn.disabled = false;
-  } else if (savedElapsed > 0) {
-    // 일시정지 상태였음 → 그 시간부터 이어서 가능
-    qtElapsed = savedElapsed;
-    qtClock.textContent = formatTime(qtElapsed);
-    qtStartBtn.textContent = '▶ 이어서';
-  }
-}
-
-// ===== 아이템 관리 =====
-const totalKills = document.getElementById('total-kills');
-let items = [];
-let nextId = 1;
-
-async function loadItems() {
-  // 로컬 캐시로 즉시 렌더링
-  const raw = localStorage.getItem('farming-items');
-  if (raw) {
-    try {
-      const data = JSON.parse(raw);
-      items = data.items || [];
-      nextId = data.nextId || 1;
-    } catch (e) {}
-  }
-  // 로드된 아이템 없으면 초기값 placeholder
-  if (items.length === 0) items = [];
-  renderItems();
-
-  // Firestore에서 공유 데이터 동기화
-  if (db) {
-    try {
-      const snap = await db.collection('farm').doc('items').get();
-      if (snap.exists) {
-        const data = snap.data();
-        // 로컬에 저장된 이미지와 병합 (오너 기기에서만 이미지 표시)
-        const localItems = raw ? (JSON.parse(raw).items || []) : [];
-        const imageMap = {};
-        localItems.forEach(i => { if (i.image) imageMap[i.id] = i.image; });
-        items = (data.items || []).map(item => ({
-          ...item,
-          // 로컬 base64 이미지 우선, 없으면 Firestore의 URL 이미지 사용
-          image: imageMap[item.id] || item.image || ''
-        }));
-        nextId = data.nextId || 1;
-        renderItems();
-      }
-    } catch (e) {
-      console.log('Firestore 로드 실패, 로컬 데이터 사용');
-    }
-  }
-  // 오너 최초 방문 시 새 아이템으로 리셋
-  resetToFreshItems();
-}
-function saveItems() {
-  localStorage.setItem('farming-items', JSON.stringify({ items, nextId }));
-  syncToFirestore();
-}
-
-function calcEstimate(item) {
-  if (item.rate > 0 && item.count > 0) {
-    return Math.round(item.count / (item.rate / 100));
-  }
-  return 0;
-}
-
-let currentTotalKills = 0;
-
-// 그룹2의 은의 원석·사파이어의 원석 두 아이템 평균으로 계산
-function recomputeTotalKills() {
-  currentTotalKills = 0;
-  const TARGET_NAMES = ['은의 원석', '사파이어의 원석'];
-  const targetItems = items.filter(i => (i.group || 1) === 2 && TARGET_NAMES.includes(i.name));
-  const estimates = targetItems.map(calcEstimate).filter(e => e > 0);
-  if (estimates.length > 0) {
-    currentTotalKills = Math.round(estimates.reduce((a, b) => a + b, 0) / estimates.length);
-  }
-}
-
-// 아이템 확률 기대값 텍스트 (총 킬수 × 확률)
-function getEstimateText(item) {
-  if (!item.rate) return '확률 입력';
-  const avg = Math.round(100 / item.rate).toLocaleString();
-  const avgLine = `<span class="est-avg">${avg}마리/1개</span>`;
-  if (currentTotalKills > 0) {
-    const exp = currentTotalKills * (item.rate / 100);
-    const expFmt = exp < 0.01 ? '&lt;0.01'
-      : exp >= 10 ? Math.round(exp).toLocaleString()
-      : parseFloat(exp.toFixed(2)).toString();
-    return `기대 <strong>${expFmt}</strong>개<br>${avgLine}`;
-  }
-  return avgLine;
-}
-
-// 그룹1 아이템 개수 합계 표시
-function updateGroup1Sum() {
-  const el = document.getElementById('group1-count-sum');
-  if (!el) return;
-  const sum = items.filter(i => (i.group || 1) === 1).reduce((a, i) => a + (i.count || 0), 0);
-  el.textContent = sum > 0 ? `합계 ${sum.toLocaleString()}개` : '';
-  el.style.display = sum > 0 ? '' : 'none';
-}
-
-// 총 킬수 표시 + 모든 카드 기대값 동시 갱신 (입력 포커스 유지)
-function updateAllEstimates() {
-  recomputeTotalKills();
-  updateGroup1Sum();
-  totalKills.textContent = currentTotalKills.toLocaleString() + ' 마리';
-  items.forEach(item => {
-    const el = document.querySelector(`[data-est-id="${item.id}"]`);
-    if (el) el.innerHTML = getEstimateText(item);
-  });
-}
-
-function updateTotalKills() { updateAllEstimates(); }
-
-let dragSrcId = null;
-
-function attachDragHandlers(grid) {
-  if (!isOwner) return;
-  grid.addEventListener('dragstart', (e) => {
-    const card = e.target.closest('[data-item-id]');
-    if (!card) return;
-    dragSrcId = parseInt(card.dataset.itemId);
-    e.dataTransfer.effectAllowed = 'move';
-    setTimeout(() => card.classList.add('dragging'), 0);
-  });
-  grid.addEventListener('dragend', () => {
-    dragSrcId = null;
-    grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
-  });
-  grid.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    const card = e.target.closest('[data-item-id]');
-    if (!card || parseInt(card.dataset.itemId) === dragSrcId) return;
-    grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
-    card.classList.add('drag-over');
-  });
-  grid.addEventListener('dragleave', (e) => {
-    if (!grid.contains(e.relatedTarget)) {
-      grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
-    }
-  });
-  grid.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const card = e.target.closest('[data-item-id]');
-    if (!card || !dragSrcId) return;
-    const targetId = parseInt(card.dataset.itemId);
-    if (targetId === dragSrcId) return;
-    grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
-    const srcIdx = items.findIndex(i => i.id === dragSrcId);
-    const dstIdx = items.findIndex(i => i.id === targetId);
-    if (srcIdx === -1 || dstIdx === -1) return;
-    const [moved] = items.splice(srcIdx, 1);
-    items.splice(dstIdx, 0, moved);
-    saveItems();
-    renderItems();
-  });
-}
-
-function renderGroup(gridId, groupNum) {
-  const grid = document.getElementById(gridId);
-  if (!grid) return;
-  grid.innerHTML = '';
-  items.filter(i => (i.group || 1) === groupNum).forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'item-card';
-    if (isOwner) {
-      card.draggable = true;
-      card.dataset.itemId = item.id;
-    }
-    const imgHtml = item.image
-      ? `<img src="${item.image}" alt="" onerror="this.style.display='none'">`
-      : `<span class="placeholder">🖼</span>`;
-    card.innerHTML = `
-      <div class="item-image-wrap">
-        ${imgHtml}
-        ${isOwner ? `<button class="item-edit" data-edit="${item.id}">⚙</button>` : ''}
-      </div>
-      <p class="item-name">${item.name}</p>
-      <p class="item-rate">${item.rate}% 드랍</p>
-      <div class="counter">
-        ${isOwner ? `<button data-minus="${item.id}">−</button>` : ''}
-        ${isOwner
-          ? `<input class="display count-input" type="number" min="0" value="${item.count}" data-count="${item.id}" />`
-          : `<div class="display">${item.count}</div>`}
-        ${isOwner ? `<button class="plus" data-plus="${item.id}">+</button>` : ''}
-      </div>
-      <p class="item-estimate" data-est-id="${item.id}">${getEstimateText(item)}</p>
-      ${isOwner ? `<button class="item-move" data-move="${item.id}" title="${groupNum === 1 ? '아래 그룹으로 이동' : '위 그룹으로 이동'}">${groupNum === 1 ? '↓ 그룹 2로' : '↑ 그룹 1로'}</button>` : ''}
-    `;
-    grid.appendChild(card);
-  });
-  grid.querySelectorAll('[data-plus]').forEach(b => {
-    b.onclick = () => { const it = items.find(i => i.id === parseInt(b.dataset.plus)); it.count++; saveItems(); renderItems(); };
-  });
-  grid.querySelectorAll('[data-minus]').forEach(b => {
-    b.onclick = () => { const it = items.find(i => i.id === parseInt(b.dataset.minus)); if (it.count > 0) { it.count--; saveItems(); renderItems(); } };
-  });
-  grid.querySelectorAll('[data-edit]').forEach(b => {
-    b.onclick = () => openEdit(parseInt(b.dataset.edit));
-  });
-  grid.querySelectorAll('[data-move]').forEach(b => {
-    b.onclick = () => {
-      const it = items.find(i => i.id === parseInt(b.dataset.move));
-      if (it) { it.group = it.group === 1 ? 2 : 1; saveItems(); renderItems(); }
-    };
-  });
-  grid.querySelectorAll('[data-count]').forEach(input => {
-    input.oninput = () => {
-      const val = parseInt(input.value);
-      const it = items.find(i => i.id === parseInt(input.dataset.count));
-      if (!it) return;
-      it.count = isNaN(val) || val < 0 ? 0 : val;
-      updateAllEstimates(); // 총 킬수 + 전체 기대값 동시 갱신
-    };
-    input.onblur = () => {
-      const it = items.find(i => i.id === parseInt(input.dataset.count));
-      if (!it) return;
-      if (isNaN(it.count) || it.count < 0) { it.count = 0; input.value = 0; }
-      saveItems();
-    };
-    input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
-  });
-}
-
-function renderItems() {
-  recomputeTotalKills(); // 카드 렌더 전에 먼저 계산
-  renderGroup('items-grid-1', 1);
-  renderGroup('items-grid-2', 2);
-  updateGroup1Sum();
-  totalKills.textContent = currentTotalKills.toLocaleString() + ' 마리';
-  // 드래그 핸들러는 grid 교체 후 매번 다시 붙임
-  attachDragHandlers(document.getElementById('items-grid-1'));
-  attachDragHandlers(document.getElementById('items-grid-2'));
-}
-
-document.getElementById('btn-add-item-1').onclick = () => {
-  items.push({ id: nextId++, name: '새 아이템', image: '', rate: 1, count: 0, group: 1 });
-  saveItems(); renderItems();
-};
-document.getElementById('btn-add-item-2').onclick = () => {
-  items.push({ id: nextId++, name: '새 아이템', image: '', rate: 1, count: 0, group: 2 });
-  saveItems(); renderItems();
-};
-
-// ===== 편집 모달 =====
+// ===== 편집 모달 (두 탭 공유) =====
+let activeTab = null;
 const modal = document.getElementById('edit-modal');
 let editingId = null;
-
 let pendingImageData = '';
 
 function showImagePreview(dataUrl) {
@@ -561,127 +95,485 @@ function showImagePreview(dataUrl) {
   document.getElementById('image-preview-wrap').style.display = 'inline-block';
   document.getElementById('image-empty').style.display = 'none';
 }
-
 function clearImagePreview() {
   pendingImageData = '';
   document.getElementById('image-preview').src = '';
   document.getElementById('image-preview-wrap').style.display = 'none';
   document.getElementById('image-empty').style.display = 'block';
 }
-
 function readImageFile(file) {
   if (!file || !file.type.startsWith('image/')) return;
   const reader = new FileReader();
-  reader.onload = (e) => showImagePreview(e.target.result);
+  reader.onload = e => showImagePreview(e.target.result);
   reader.readAsDataURL(file);
 }
 
-function openEdit(id) {
-  const item = items.find(i => i.id === id);
-  if (!item) return;
-  editingId = id;
-  document.getElementById('m-name').value = item.name;
-  document.getElementById('m-rate').value = item.rate;
-  document.getElementById('m-count').value = item.count;
-  
-  // 이미지 미리보기 초기화
-  if (item.image) {
-    showImagePreview(item.image);
-  } else {
-    clearImagePreview();
-  }
-  
-  modal.classList.remove('hidden');
-}
-
-// 이미지 업로드 이벤트들
 const dropZone = document.getElementById('image-drop-zone');
 const fileInput = document.getElementById('image-file');
-
-document.getElementById('image-pick').onclick = (e) => {
-  e.stopPropagation();
-  fileInput.click();
-};
-fileInput.onchange = (e) => {
-  if (e.target.files[0]) readImageFile(e.target.files[0]);
-};
-document.getElementById('image-remove').onclick = (e) => {
-  e.stopPropagation();
-  clearImagePreview();
-};
-
-// 드래그앤드롭
-dropZone.ondragover = (e) => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-};
+document.getElementById('image-pick').onclick = e => { e.stopPropagation(); fileInput.click(); };
+fileInput.onchange = e => { if (e.target.files[0]) readImageFile(e.target.files[0]); };
+document.getElementById('image-remove').onclick = e => { e.stopPropagation(); clearImagePreview(); };
+dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('dragover'); };
 dropZone.ondragleave = () => dropZone.classList.remove('dragover');
-dropZone.ondrop = (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
+dropZone.ondrop = e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
   if (e.dataTransfer.files[0]) readImageFile(e.dataTransfer.files[0]);
 };
-
-// 붙여넣기 (Ctrl+V) - 모달이 열려있을 때만 작동
-document.addEventListener('paste', (e) => {
+document.addEventListener('paste', e => {
   if (modal.classList.contains('hidden')) return;
   const items = e.clipboardData.items;
   for (let i = 0; i < items.length; i++) {
-    if (items[i].type.startsWith('image/')) {
-      const file = items[i].getAsFile();
-      readImageFile(file);
-      e.preventDefault();
-      break;
-    }
+    if (items[i].type.startsWith('image/')) { readImageFile(items[i].getAsFile()); e.preventDefault(); break; }
   }
 });
+
 document.getElementById('m-cancel').onclick = () => modal.classList.add('hidden');
 document.getElementById('m-delete').onclick = () => {
-  items = items.filter(i => i.id !== editingId);
-  saveItems(); renderItems();
+  if (!activeTab) return;
+  activeTab.deleteItem(editingId);
+  activeTab.saveAndRender();
   modal.classList.add('hidden');
 };
 document.getElementById('m-save').onclick = () => {
-  const item = items.find(i => i.id === editingId);
-  item.name = document.getElementById('m-name').value || '이름 없음';
-  item.image = pendingImageData;
-  item.rate = parseFloat(document.getElementById('m-rate').value) || 0;
-  item.count = parseInt(document.getElementById('m-count').value) || 0;
-  saveItems(); renderItems();
+  if (!activeTab) return;
+  activeTab.updateItem(editingId, {
+    name: document.getElementById('m-name').value || '이름 없음',
+    image: pendingImageData,
+    rate: parseFloat(document.getElementById('m-rate').value) || 0,
+    count: parseInt(document.getElementById('m-count').value) || 0,
+  });
+  activeTab.saveAndRender();
   modal.classList.add('hidden');
 };
 
-// ===== 타이머 =====
-const expStart = document.getElementById('exp-start');
-const expEnd = document.getElementById('exp-end');
+// ===== 파밍 탭 팩토리 =====
+function createFarmTab({ key, itemVersion, itemList, prefix, defaultGroupNames, killsCalc, qtStartKey, qtElapsedKey }) {
+  const $ = id => document.getElementById(`${prefix}-${id}`);
+  const SK = {
+    items:     `${key}-items`,
+    version:   `${key}-item-version`,
+    links:     `${key}-links`,
+    groups:    `${key}-groups`,
+    qtStart:   qtStartKey   || `${key}-qt-start`,
+    qtElapsed: qtElapsedKey || `${key}-qt-elapsed`,
+  };
+
+  let items = [], nextId = 1;
+  let links = [], nextLinkId = 1;
+  let groupNames = [...defaultGroupNames];
+  let currentTotalKills = 0, dragSrcId = null;
+  let qtStart = null, qtElapsed = 0, qtInterval = null;
+  let iface; // forward reference for openEdit
+
+  // --- Firestore ---
+  function syncToFirestore() {
+    if (!isOwner || !db) return;
+    const itemsForFS = items.map(({ image, ...rest }) => ({
+      ...rest, image: image && !image.startsWith('data:') ? image : ''
+    }));
+    db.collection('farm').doc(`${key}-items`).set({ items: itemsForFS, nextId }).catch(() => {});
+  }
+
+  // --- 킬 추정 ---
+  function calcEstimate(item) {
+    return item.rate > 0 && item.count > 0 ? Math.round(item.count / (item.rate / 100)) : 0;
+  }
+  function recomputeTotalKills() {
+    currentTotalKills = 0;
+    if (killsCalc === 'avgNamed') {
+      const TARGET = ['은의 원석', '사파이어의 원석'];
+      const targets = items.filter(i => (i.group || 1) === 2 && TARGET.includes(i.name));
+      const ests = targets.map(calcEstimate).filter(e => e > 0);
+      if (ests.length) currentTotalKills = Math.round(ests.reduce((a, b) => a + b, 0) / ests.length);
+    } else {
+      items.filter(i => (i.group || 1) === 2).forEach(i => {
+        const e = calcEstimate(i); if (e > currentTotalKills) currentTotalKills = e;
+      });
+    }
+  }
+  function getEstimateText(item) {
+    if (!item.rate) return '확률 입력';
+    const avg = Math.round(100 / item.rate).toLocaleString();
+    const avgLine = `<span class="est-avg">${avg}마리/1개</span>`;
+    if (currentTotalKills > 0) {
+      const exp = currentTotalKills * (item.rate / 100);
+      const expFmt = exp < 0.01 ? '&lt;0.01' : exp >= 10
+        ? Math.round(exp).toLocaleString()
+        : parseFloat(exp.toFixed(2)).toString();
+      return `기대 <strong>${expFmt}</strong>개<br>${avgLine}`;
+    }
+    return avgLine;
+  }
+  function updateGroup1Sum() {
+    const el = $('group1-count-sum');
+    if (!el) return;
+    const sum = items.filter(i => (i.group || 1) === 1).reduce((a, i) => a + (i.count || 0), 0);
+    el.textContent = sum > 0 ? `합계 ${sum.toLocaleString()}개` : '';
+    el.style.display = sum > 0 ? '' : 'none';
+  }
+  function updateAllEstimates() {
+    recomputeTotalKills(); updateGroup1Sum();
+    const tk = $('total-kills');
+    if (tk) tk.textContent = currentTotalKills.toLocaleString() + ' 마리';
+    items.forEach(item => {
+      const el = document.querySelector(`[data-est-id="${prefix}-${item.id}"]`);
+      if (el) el.innerHTML = getEstimateText(item);
+    });
+  }
+
+  // --- 드래그앤드롭 ---
+  function attachDragHandlers(grid) {
+    if (!isOwner || !grid) return;
+    grid.addEventListener('dragstart', e => {
+      const card = e.target.closest('[data-item-id]');
+      if (!card) return;
+      dragSrcId = parseInt(card.dataset.itemId);
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => card.classList.add('dragging'), 0);
+    });
+    grid.addEventListener('dragend', () => {
+      dragSrcId = null;
+      grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+    });
+    grid.addEventListener('dragover', e => {
+      e.preventDefault();
+      const card = e.target.closest('[data-item-id]');
+      if (!card || parseInt(card.dataset.itemId) === dragSrcId) return;
+      grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+      card.classList.add('drag-over');
+    });
+    grid.addEventListener('dragleave', e => {
+      if (!grid.contains(e.relatedTarget))
+        grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+    });
+    grid.addEventListener('drop', e => {
+      e.preventDefault();
+      const card = e.target.closest('[data-item-id]');
+      if (!card || !dragSrcId) return;
+      const targetId = parseInt(card.dataset.itemId);
+      if (targetId === dragSrcId) return;
+      grid.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+      const si = items.findIndex(i => i.id === dragSrcId);
+      const di = items.findIndex(i => i.id === targetId);
+      if (si === -1 || di === -1) return;
+      const [m] = items.splice(si, 1); items.splice(di, 0, m);
+      saveItems(); renderItems();
+    });
+  }
+
+  // --- 렌더링 ---
+  function renderGroup(num) {
+    const grid = $(`items-grid-${num}`);
+    if (!grid) return;
+    grid.innerHTML = '';
+    items.filter(i => (i.group || 1) === num).forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'item-card';
+      if (isOwner) { card.draggable = true; card.dataset.itemId = item.id; }
+      const imgHtml = item.image
+        ? `<img src="${item.image}" alt="" onerror="this.style.display='none'">`
+        : `<span class="placeholder">🖼</span>`;
+      card.innerHTML = `
+        <div class="item-image-wrap">
+          ${imgHtml}
+          ${isOwner ? `<button class="item-edit" data-edit="${item.id}">⚙</button>` : ''}
+        </div>
+        <p class="item-name">${item.name}</p>
+        <p class="item-rate">${item.rate}% 드랍</p>
+        <div class="counter">
+          ${isOwner ? `<button data-minus="${item.id}">−</button>` : ''}
+          ${isOwner
+            ? `<input class="display count-input" type="number" min="0" value="${item.count}" data-count="${item.id}" />`
+            : `<div class="display">${item.count}</div>`}
+          ${isOwner ? `<button class="plus" data-plus="${item.id}">+</button>` : ''}
+        </div>
+        <p class="item-estimate" data-est-id="${prefix}-${item.id}">${getEstimateText(item)}</p>
+        ${isOwner ? `<button class="item-move" data-move="${item.id}">${num === 1 ? '↓ 그룹 2로' : '↑ 그룹 1로'}</button>` : ''}
+      `;
+      grid.appendChild(card);
+    });
+    grid.querySelectorAll('[data-plus]').forEach(b => {
+      b.onclick = () => { const it = items.find(i => i.id === parseInt(b.dataset.plus)); if (it) { it.count++; saveItems(); renderItems(); } };
+    });
+    grid.querySelectorAll('[data-minus]').forEach(b => {
+      b.onclick = () => { const it = items.find(i => i.id === parseInt(b.dataset.minus)); if (it && it.count > 0) { it.count--; saveItems(); renderItems(); } };
+    });
+    grid.querySelectorAll('[data-edit]').forEach(b => {
+      b.onclick = () => openEdit(parseInt(b.dataset.edit));
+    });
+    grid.querySelectorAll('[data-move]').forEach(b => {
+      b.onclick = () => { const it = items.find(i => i.id === parseInt(b.dataset.move)); if (it) { it.group = it.group === 1 ? 2 : 1; saveItems(); renderItems(); } };
+    });
+    grid.querySelectorAll('[data-count]').forEach(input => {
+      input.oninput = () => {
+        const val = parseInt(input.value);
+        const it = items.find(i => i.id === parseInt(input.dataset.count));
+        if (!it) return;
+        it.count = isNaN(val) || val < 0 ? 0 : val;
+        updateAllEstimates();
+      };
+      input.onblur = () => {
+        const it = items.find(i => i.id === parseInt(input.dataset.count));
+        if (!it) return;
+        if (isNaN(it.count) || it.count < 0) { it.count = 0; input.value = 0; }
+        saveItems();
+      };
+      input.onkeydown = e => { if (e.key === 'Enter') input.blur(); };
+    });
+  }
+
+  function renderItems() {
+    recomputeTotalKills();
+    renderGroup(1); renderGroup(2);
+    updateGroup1Sum();
+    const tk = $('total-kills');
+    if (tk) tk.textContent = currentTotalKills.toLocaleString() + ' 마리';
+    attachDragHandlers($('items-grid-1'));
+    attachDragHandlers($('items-grid-2'));
+  }
+
+  // --- 스토리지 ---
+  function saveItems() {
+    localStorage.setItem(SK.items, JSON.stringify({ items, nextId }));
+    syncToFirestore();
+  }
+  async function loadItems() {
+    const raw = localStorage.getItem(SK.items);
+    if (raw) { try { const d = JSON.parse(raw); items = d.items || []; nextId = d.nextId || 1; } catch(e) {} }
+    renderItems();
+    if (db) {
+      try {
+        const snap = await db.collection('farm').doc(`${key}-items`).get();
+        if (snap.exists) {
+          const d = snap.data();
+          const localItems = raw ? (JSON.parse(raw).items || []) : [];
+          const imgMap = {};
+          localItems.forEach(i => { if (i.image) imgMap[i.id] = i.image; });
+          items = (d.items || []).map(item => ({ ...item, image: imgMap[item.id] || item.image || '' }));
+          nextId = d.nextId || 1;
+          renderItems();
+        }
+      } catch(e) {}
+    }
+    resetToFreshItems();
+  }
+  function resetToFreshItems() {
+    if (!isOwner || !itemList || itemList.length === 0) return;
+    const saved = parseInt(localStorage.getItem(SK.version) || '0');
+    if (saved >= itemVersion) return;
+    items = itemList.map((di, idx) => ({
+      id: idx + 1, name: di.name,
+      image: `https://maplestory.io/api/gms/90/item/${di.imgId}/icon`,
+      rate: di.rate, count: 0, group: di.group,
+    }));
+    nextId = items.length + 1;
+    saveItems(); renderItems();
+    localStorage.setItem(SK.version, String(itemVersion));
+  }
+
+  // --- 링크 ---
+  function renderLinks() {
+    const list = $('links-list');
+    if (!list) return;
+    list.innerHTML = '';
+    links.forEach(link => {
+      const tag = document.createElement('a');
+      tag.className = 'link-tag'; tag.href = link.url; tag.target = '_blank';
+      tag.innerHTML = `<span>${link.name}</span>${isOwner ? `<button class="link-del" data-del="${link.id}">×</button>` : ''}`;
+      list.appendChild(tag);
+    });
+    list.querySelectorAll('.link-del').forEach(btn => {
+      btn.onclick = e => {
+        e.preventDefault(); e.stopPropagation();
+        const lnk = links.find(l => l.id === parseInt(btn.dataset.del));
+        if (!confirm(`"${lnk ? lnk.name : '이 링크'}"를 삭제할까요?`)) return;
+        links = links.filter(l => l.id !== parseInt(btn.dataset.del));
+        saveLinks(); renderLinks();
+      };
+    });
+  }
+  function saveLinks() {
+    localStorage.setItem(SK.links, JSON.stringify({ links, nextId: nextLinkId }));
+    if (isOwner && db) db.collection('farm').doc(`${key}-links`).set({ links, nextId: nextLinkId }).catch(() => {});
+  }
+  function loadLinks() {
+    const raw = localStorage.getItem(SK.links);
+    if (raw) { try { const d = JSON.parse(raw); links = d.links || []; nextLinkId = d.nextId || 1; } catch(e) {} }
+    renderLinks();
+    if (db) db.collection('farm').doc(`${key}-links`).get().then(snap => {
+      if (snap.exists) { const d = snap.data(); links = d.links || []; nextLinkId = d.nextId || 1; renderLinks(); }
+    }).catch(() => {});
+  }
+
+  // --- 그룹 이름 ---
+  function applyGroupNames() {
+    [0, 1].forEach(idx => { const el = $(`group-name-${idx + 1}`); if (el) el.textContent = groupNames[idx] || defaultGroupNames[idx]; });
+  }
+  function saveGroupNames() {
+    localStorage.setItem(SK.groups, JSON.stringify(groupNames));
+    if (db) db.collection('farm').doc(`${key}-groups`).set({ names: groupNames }).catch(() => {});
+  }
+  function loadGroupNames() {
+    const raw = localStorage.getItem(SK.groups);
+    if (raw) { try { groupNames = JSON.parse(raw); } catch(e) {} }
+    applyGroupNames();
+    if (db) db.collection('farm').doc(`${key}-groups`).get().then(snap => {
+      if (snap.exists && snap.data().names) { groupNames = snap.data().names; applyGroupNames(); }
+    }).catch(() => {});
+  }
+  function initGroupNameEditing() {
+    if (!isOwner) return;
+    [0, 1].forEach(idx => {
+      const el = $(`group-name-${idx + 1}`);
+      if (!el || el.dataset.editable) return;
+      el.dataset.editable = 'true'; el.classList.add('editable-name');
+      el.onclick = () => {
+        const n = prompt('그룹 이름 변경:', groupNames[idx]);
+        if (n !== null && n.trim()) { groupNames[idx] = n.trim(); el.textContent = groupNames[idx]; saveGroupNames(); }
+      };
+    });
+  }
+
+  // --- 빠른 타이머 ---
+  function qtSaveState() {
+    if (qtStart !== null) { localStorage.setItem(SK.qtStart, String(qtStart)); }
+    else { localStorage.removeItem(SK.qtStart); localStorage.setItem(SK.qtElapsed, String(qtElapsed)); }
+  }
+  function qtClearState() { localStorage.removeItem(SK.qtStart); localStorage.removeItem(SK.qtElapsed); }
+  function qtStartInterval() {
+    const clockEl = $('qt-clock');
+    qtInterval = setInterval(() => {
+      qtElapsed = Date.now() - qtStart;
+      if (clockEl) clockEl.textContent = formatTime(qtElapsed);
+      localStorage.setItem(SK.qtStart, String(qtStart));
+    }, 500);
+  }
+  function setupQuickTimer() {
+    const startBtn = $('qt-start'), pauseBtn = $('qt-pause'), resetBtn = $('qt-reset'), clockEl = $('qt-clock');
+    if (!startBtn) return;
+    startBtn.onclick = () => {
+      qtStart = Date.now() - qtElapsed;
+      qtSaveState(); qtStartInterval();
+      startBtn.disabled = true; pauseBtn.disabled = false;
+    };
+    pauseBtn.onclick = () => {
+      clearInterval(qtInterval); qtStart = null; qtSaveState();
+      startBtn.disabled = false; pauseBtn.disabled = true;
+      startBtn.textContent = '▶ 이어서';
+    };
+    resetBtn.onclick = () => {
+      clearInterval(qtInterval); qtElapsed = 0; qtStart = null; qtClearState();
+      if (clockEl) clockEl.textContent = '00:00:00';
+      startBtn.disabled = false; pauseBtn.disabled = true;
+      startBtn.textContent = '▶ 시작';
+    };
+  }
+  function loadQtState() {
+    const startBtn = $('qt-start'), pauseBtn = $('qt-pause'), clockEl = $('qt-clock');
+    if (!startBtn) return;
+    const savedStart   = parseInt(localStorage.getItem(SK.qtStart)   || '0');
+    const savedElapsed = parseInt(localStorage.getItem(SK.qtElapsed) || '0');
+    if (savedStart > 0) {
+      qtStart = savedStart; qtElapsed = Date.now() - qtStart;
+      if (clockEl) clockEl.textContent = formatTime(qtElapsed);
+      qtStartInterval(); startBtn.disabled = true; pauseBtn.disabled = false;
+    } else if (savedElapsed > 0) {
+      qtElapsed = savedElapsed;
+      if (clockEl) clockEl.textContent = formatTime(qtElapsed);
+      startBtn.textContent = '▶ 이어서';
+    }
+  }
+
+  // --- 링크/아이템 버튼 세팅 ---
+  function setupLinkButtons() {
+    const btnAdd = $('btn-add-link'), form = $('link-form');
+    const nameInput = $('link-name'), urlInput = $('link-url');
+    const btnCancel = $('link-cancel'), btnSave = $('link-save');
+    if (!btnAdd) return;
+    btnAdd.onclick = () => { form.classList.remove('hidden'); nameInput.value = ''; urlInput.value = ''; nameInput.focus(); };
+    btnCancel.onclick = () => form.classList.add('hidden');
+    btnSave.onclick = () => {
+      const name = nameInput.value.trim(); let url = urlInput.value.trim();
+      if (!name || !url) return;
+      if (!url.startsWith('http')) url = 'https://' + url;
+      links.push({ id: nextLinkId++, name, url });
+      saveLinks(); renderLinks(); form.classList.add('hidden');
+    };
+    urlInput.onkeydown = e => { if (e.key === 'Enter') btnSave.click(); };
+  }
+  function setupAddItemButtons() {
+    const btn1 = $('btn-add-item-1'), btn2 = $('btn-add-item-2');
+    if (btn1) btn1.onclick = () => { items.push({ id: nextId++, name: '새 아이템', image: '', rate: 1, count: 0, group: 1 }); saveItems(); renderItems(); };
+    if (btn2) btn2.onclick = () => { items.push({ id: nextId++, name: '새 아이템', image: '', rate: 1, count: 0, group: 2 }); saveItems(); renderItems(); };
+  }
+
+  // --- 편집 모달 오픈 ---
+  function openEdit(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    activeTab = iface; // 현재 탭을 활성 탭으로
+    editingId = id;
+    document.getElementById('m-name').value = item.name;
+    document.getElementById('m-rate').value = item.rate;
+    document.getElementById('m-count').value = item.count;
+    if (item.image) { showImagePreview(item.image); } else { clearImagePreview(); }
+    modal.classList.remove('hidden');
+  }
+
+  // --- 초기화 ---
+  function init() {
+    loadItems(); loadLinks(); loadGroupNames();
+    setupLinkButtons(); setupAddItemButtons();
+    setupQuickTimer(); loadQtState();
+    initGroupNameEditing();
+  }
+
+  iface = {
+    init, renderItems, renderLinks, initGroupNameEditing,
+    deleteItem: id => { items = items.filter(i => i.id !== id); },
+    updateItem: (id, changes) => { const it = items.find(i => i.id === id); if (it) Object.assign(it, changes); },
+    saveAndRender: () => { saveItems(); renderItems(); },
+    getTotalItemCount: () => items.reduce((s, i) => s + (i.count || 0), 0),
+  };
+  return iface;
+}
+
+// ===== 탭 인스턴스 =====
+const wolmyoTab = createFarmTab({
+  key: 'farming', prefix: 'w',
+  itemVersion: ITEM_VERSION, itemList: ITEM_LIST,
+  defaultGroupNames: ['파밍 1', '파밍 2'],
+  killsCalc: 'avgNamed',
+  qtStartKey: 'qt-start-ts',   // 기존 localStorage 호환
+  qtElapsedKey: 'qt-elapsed',
+});
+const kronosTab = createFarmTab({
+  key: 'kronos', prefix: 'k',
+  itemVersion: KRONOS_ITEM_VERSION, itemList: KRONOS_ITEM_LIST,
+  defaultGroupNames: ['그룹 1', '그룹 2'],
+  killsCalc: 'max',
+});
+
+// ===== 타이머 탭 =====
+const expStart    = document.getElementById('exp-start');
+const expEnd      = document.getElementById('exp-end');
 const locationName = document.getElementById('location-name');
-const timerClock = document.getElementById('timer-clock');
+const timerClock  = document.getElementById('timer-clock');
 const timerStatus = document.getElementById('timer-status');
-const liveStats = document.getElementById('live-stats');
-const liveExp = document.getElementById('live-exp');
-const liveItems = document.getElementById('live-items');
-const btnStart = document.getElementById('btn-start');
-const btnPause = document.getElementById('btn-pause');
-const btnStop = document.getElementById('btn-stop');
-const btnReset = document.getElementById('btn-reset');
-const savePrompt = document.getElementById('save-prompt');
+const liveStats   = document.getElementById('live-stats');
+const liveExp     = document.getElementById('live-exp');
+const liveItems   = document.getElementById('live-items');
+const btnStart    = document.getElementById('btn-start');
+const btnPause    = document.getElementById('btn-pause');
+const btnStop     = document.getElementById('btn-stop');
+const btnReset    = document.getElementById('btn-reset');
+const savePrompt  = document.getElementById('save-prompt');
 const saveSummary = document.getElementById('save-summary');
 
-let startTime = null;
-let elapsed = 0;
-let intervalId = null;
-let sessionStartItems = 0;
-let lastSession = null;
+let startTime = null, elapsed = 0, intervalId = null, sessionStartItems = 0, lastSession = null;
 
 function totalItemCount() {
-  return items.reduce((sum, i) => sum + (i.count || 0), 0);
-}
-function formatTime(ms) {
-  const total = Math.floor(ms / 1000);
-  const h = String(Math.floor(total / 3600)).padStart(2, '0');
-  const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
-  const s = String(total % 60).padStart(2, '0');
-  return h + ':' + m + ':' + s;
+  return wolmyoTab.getTotalItemCount() + kronosTab.getTotalItemCount();
 }
 function updateLive() {
   elapsed = Date.now() - startTime;
@@ -695,90 +587,64 @@ function updateLive() {
     liveItems.textContent = itemsGained + '개 (시당 ' + Math.round(itemsGained / hours) + ')';
   }
 }
-
 btnStart.onclick = () => {
   if (elapsed === 0) sessionStartItems = totalItemCount();
   startTime = Date.now() - elapsed;
   intervalId = setInterval(updateLive, 1000);
-  btnStart.disabled = true;
-  btnPause.disabled = false;
-  btnStop.disabled = false;
-  timerStatus.textContent = '진행 중';
-  savePrompt.classList.add('hidden');
+  btnStart.disabled = true; btnPause.disabled = false; btnStop.disabled = false;
+  timerStatus.textContent = '진행 중'; savePrompt.classList.add('hidden');
 };
 btnPause.onclick = () => {
-  if (intervalId) clearInterval(intervalId);
-  btnStart.disabled = false;
-  btnStart.textContent = '▶ 이어서';
-  btnPause.disabled = true;
+  clearInterval(intervalId);
+  btnStart.disabled = false; btnStart.textContent = '▶ 이어서'; btnPause.disabled = true;
   timerStatus.textContent = '일시정지';
 };
 btnStop.onclick = () => {
-  if (intervalId) clearInterval(intervalId);
-  btnStart.disabled = false;
-  btnStart.textContent = '▶ 시작';
-  btnPause.disabled = true;
-  btnStop.disabled = true;
+  clearInterval(intervalId);
+  btnStart.disabled = false; btnStart.textContent = '▶ 시작'; btnPause.disabled = true; btnStop.disabled = true;
   timerStatus.textContent = '종료';
   const gained = Math.max(0, (parseInt(expEnd.value) || 0) - (parseInt(expStart.value) || 0));
   const itemsGained = Math.max(0, totalItemCount() - sessionStartItems);
   const hours = elapsed / 3600000;
   lastSession = {
-    id: Date.now(),
-    date: new Date().toLocaleString('ko-KR'),
-    location: locationName.value || '이름 없음',
-    durationStr: formatTime(elapsed),
-    exp: gained,
-    items: itemsGained,
+    id: Date.now(), date: new Date().toLocaleString('ko-KR'), location: locationName.value || '이름 없음',
+    durationStr: formatTime(elapsed), exp: gained, items: itemsGained,
     expPerHour: hours > 0 ? Math.round(gained / hours) : 0,
-    itemsPerHour: hours > 0 ? Math.round(itemsGained / hours) : 0
+    itemsPerHour: hours > 0 ? Math.round(itemsGained / hours) : 0,
   };
   saveSummary.innerHTML = `<strong>${formatTime(elapsed)}</strong> 동안 경험치 <strong>${gained.toLocaleString()}</strong>, 아이템 <strong>${itemsGained}개</strong>`;
   savePrompt.classList.remove('hidden');
 };
 btnReset.onclick = () => {
-  if (intervalId) clearInterval(intervalId);
-  elapsed = 0; startTime = null;
-  timerClock.textContent = '00:00:00';
-  timerStatus.textContent = '경과 시간';
-  btnStart.disabled = false;
-  btnStart.textContent = '▶ 시작';
-  btnPause.disabled = true;
-  btnStop.disabled = true;
-  liveStats.classList.add('hidden');
-  savePrompt.classList.add('hidden');
+  clearInterval(intervalId); elapsed = 0; startTime = null;
+  timerClock.textContent = '00:00:00'; timerStatus.textContent = '경과 시간';
+  btnStart.disabled = false; btnStart.textContent = '▶ 시작'; btnPause.disabled = true; btnStop.disabled = true;
+  liveStats.classList.add('hidden'); savePrompt.classList.add('hidden');
 };
-
 document.getElementById('btn-save').onclick = () => {
   if (!lastSession) return;
-  const h = loadHistory();
-  h.unshift(lastSession);
+  const h = loadHistory(); h.unshift(lastSession);
   localStorage.setItem('farming-history', JSON.stringify(h));
   savePrompt.classList.add('hidden');
 };
 
 // ===== 기록 =====
 function loadHistory() {
-  const raw = localStorage.getItem('farming-history');
-  if (!raw) return [];
-  try { return JSON.parse(raw); } catch (e) { return []; }
+  try { return JSON.parse(localStorage.getItem('farming-history') || '[]'); } catch(e) { return []; }
 }
 function renderHistory() {
   const list = document.getElementById('history-list');
   const empty = document.getElementById('history-empty');
   const h = loadHistory();
   list.innerHTML = '';
-  if (h.length === 0) { empty.classList.remove('hidden'); return; }
+  if (!h.length) { empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   h.forEach(s => {
     const row = document.createElement('div');
     row.className = 'history-item';
     row.innerHTML = `
       <div class="header">
-        <div>
-          <p style="font-weight:500">${s.location}</p>
-          <p style="font-size:11px;color:#999">${s.date}</p>
-        </div>
+        <div><p style="font-weight:500">${s.location}</p><p style="font-size:11px;color:#999">${s.date}</p></div>
         ${isOwner ? `<button data-del="${s.id}" class="small-btn">✕</button>` : ''}
       </div>
       <div class="stats">
@@ -786,36 +652,31 @@ function renderHistory() {
         <div><span>경험치</span><br><strong>${s.exp.toLocaleString()}</strong></div>
         <div><span>시당 경험</span><br><strong>${s.expPerHour.toLocaleString()}</strong></div>
         <div><span>시당 아이템</span><br><strong>${s.itemsPerHour}</strong></div>
-      </div>
-    `;
+      </div>`;
     list.appendChild(row);
   });
   list.querySelectorAll('[data-del]').forEach(b => {
     b.onclick = () => {
       const id = parseInt(b.dataset.del);
-      const h = loadHistory().filter(s => s.id !== id);
-      localStorage.setItem('farming-history', JSON.stringify(h));
+      localStorage.setItem('farming-history', JSON.stringify(loadHistory().filter(s => s.id !== id)));
       renderHistory();
     };
   });
 }
+
+// ===== 로그아웃 / 전체삭제 =====
 document.getElementById('btn-signout').onclick = () => {
   isOwner = false;
-  localStorage.removeItem('owner_logged_in');
-  localStorage.removeItem('owner_name');
+  localStorage.removeItem('owner_logged_in'); localStorage.removeItem('owner_name');
   if (typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
   document.getElementById('auth-info').classList.add('hidden');
   document.getElementById('google-signin-btn').classList.remove('hidden');
   applyAuthState();
-  renderItems();
-  renderLinks();
+  wolmyoTab.renderItems(); wolmyoTab.renderLinks();
+  kronosTab.renderItems(); kronosTab.renderLinks();
 };
-
 document.getElementById('btn-clear-all').onclick = () => {
-  if (confirm('정말 모든 기록을 삭제할까요?')) {
-    localStorage.removeItem('farming-history');
-    renderHistory();
-  }
+  if (confirm('정말 모든 기록을 삭제할까요?')) { localStorage.removeItem('farming-history'); renderHistory(); }
 };
 
 // ===== 메모장 =====
@@ -823,23 +684,18 @@ const notepadTab   = document.getElementById('notepad-tab');
 const notepadPanel = document.getElementById('notepad-panel');
 const notepadArea  = document.getElementById('notepad-area');
 const notepadClose = document.getElementById('notepad-close');
-
 notepadArea.value = localStorage.getItem('farming-memo') || '';
+notepadTab.onclick = () => { notepadPanel.classList.remove('notepad-collapsed'); notepadTab.classList.add('hidden'); notepadArea.focus(); };
+notepadClose.onclick = () => { notepadPanel.classList.add('notepad-collapsed'); notepadTab.classList.remove('hidden'); };
+notepadArea.oninput = () => localStorage.setItem('farming-memo', notepadArea.value);
 
-notepadTab.onclick = () => {
-  notepadPanel.classList.remove('notepad-collapsed');
-  notepadTab.classList.add('hidden');
-  notepadArea.focus();
-};
-notepadClose.onclick = () => {
-  notepadPanel.classList.add('notepad-collapsed');
-  notepadTab.classList.remove('hidden');
-};
-notepadArea.oninput = () => {
-  localStorage.setItem('farming-memo', notepadArea.value);
-};
+// ===== 제목 아래 편집 메모 =====
+const headerNote = document.getElementById('header-note');
+if (headerNote) {
+  headerNote.textContent = localStorage.getItem('header-note') || '';
+  headerNote.oninput = () => localStorage.setItem('header-note', headerNote.textContent);
+}
 
-loadItems();
-loadLinks();
-loadGroupNames();
-loadQtState();
+// ===== 초기화 =====
+wolmyoTab.init();
+kronosTab.init();
