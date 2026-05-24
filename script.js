@@ -100,60 +100,25 @@ function syncToFirestore() {
     .catch(e => console.log('Firestore 저장 실패:', e));
 }
 
-// ===== 기본 아이템 (월묘 드랍) =====
-const DEFAULT_MONSTER_ITEMS = [
-  { name: '골드 브레이스',         image: 'https://maplestory.io/api/gms/90/item/1082072/icon', rate: 0.01,  count: 0, group: 1 },
-  { name: '블루 카운터',           image: 'https://maplestory.io/api/gms/90/item/1312007/icon', rate: 0.008, count: 0, group: 1 },
-  { name: '노란색 우산',           image: 'https://maplestory.io/api/gms/90/item/1302016/icon', rate: 0.008, count: 0, group: 1 },
-  { name: '파란색 모험가의 망토',   image: 'https://maplestory.io/api/gms/90/item/1102001/icon', rate: 0.006, count: 0, group: 1 },
-  { name: '투구 민첩 주문서 60%',  image: 'https://maplestory.io/api/gms/90/item/2040029/icon', rate: 0.006, count: 0, group: 1 },
-  { name: '아다만티움 타워 실드',   image: 'https://maplestory.io/api/gms/90/item/1092014/icon', rate: 0.005, count: 0, group: 1 },
-  { name: '신발 점프력 주문서 10%', image: 'https://maplestory.io/api/gms/90/item/2040705/icon', rate: 0.003, count: 0, group: 1 },
-  { name: '네오자드',               image: 'https://maplestory.io/api/gms/90/item/1482006/icon', rate: 0.002, count: 0, group: 1 },
+// ===== 초기 아이템 세팅 (월묘 장비 / 원석) =====
+const FRESH_ITEMS = [
+  { name: '목비 표창',           image: 'https://maplestory.io/api/gms/90/item/2070002/icon', rate: 0.01,  count: 0, group: 1 },
+  { name: '블루 문',             image: 'https://maplestory.io/api/gms/90/item/1032011/icon', rate: 0.01,  count: 0, group: 1 },
+  { name: '옐로우 하프슈즈',     image: 'https://maplestory.io/api/gms/90/item/1072109/icon', rate: 0.01,  count: 0, group: 1 },
+  { name: '은의 원석',           image: 'https://maplestory.io/api/gms/90/item/4010004/icon', rate: 0.4,   count: 0, group: 2 },
+  { name: '사파이어의 원석',     image: 'https://maplestory.io/api/gms/90/item/4020005/icon', rate: 0.3,   count: 0, group: 2 },
+  { name: '지혜의 크리스탈 원석', image: 'https://maplestory.io/api/gms/90/item/4004001/icon', rate: 0.1,   count: 0, group: 2 },
+  { name: '마법의 돌',           image: 'https://maplestory.io/api/gms/90/item/4006000/icon', rate: 0.08,  count: 0, group: 2 },
 ];
 
-const DEFAULT_MONSTER_ITEMS_V3 = [
-  { name: '목비 표창',     image: 'https://maplestory.io/api/gms/90/item/2070002/icon', rate: 0.01, count: 0, group: 1 },
-  { name: '블루 문',       image: 'https://maplestory.io/api/gms/90/item/1032011/icon', rate: 0.01, count: 0, group: 1 },
-  { name: '미스릴 티거',   image: 'https://maplestory.io/api/gms/90/item/1072112/icon', rate: 0.01, count: 0, group: 1 },
-  { name: '옐로우 하프슈즈', image: 'https://maplestory.io/api/gms/90/item/1072109/icon', rate: 0.01, count: 0, group: 1 },
-];
-
-function seedDefaultItems() {
+function resetToFreshItems() {
   if (!isOwner) return;
-  const allDefaults = [...DEFAULT_MONSTER_ITEMS, ...DEFAULT_MONSTER_ITEMS_V3];
-  const needsV2 = !localStorage.getItem('farming-seeded-v2');
-  const needsV3 = !localStorage.getItem('farming-seeded-v3');
-  if (!needsV2 && !needsV3) return;
-
-  const existingNames = new Map(items.map(i => [i.name, i]));
-  let changed = false;
-
-  const batch = needsV2 ? allDefaults : DEFAULT_MONSTER_ITEMS_V3;
-  batch.forEach(di => {
-    const existing = existingNames.get(di.name);
-    if (!existing) {
-      items.push({ id: nextId++, ...di });
-      changed = true;
-    } else if (existing.image !== di.image) {
-      existing.image = di.image;
-      changed = true;
-    }
-  });
-  if (changed) { saveItems(); renderItems(); }
-  localStorage.setItem('farming-seeded-v2', 'true');
-  localStorage.setItem('farming-seeded-v3', 'true');
-}
-
-function cleanupDuplicates() {
-  if (!isOwner) return;
-  if (localStorage.getItem('farming-cleanup-v1')) return;
-  // v3 시딩에서 기존 아이템과 이름이 달라 중복 추가된 항목 제거
-  const toRemove = new Set(['목비 표창', '블루 문', '옐로우 하프슈즈']);
-  const before = items.length;
-  items = items.filter(i => !toRemove.has(i.name));
-  if (items.length !== before) { saveItems(); renderItems(); }
-  localStorage.setItem('farming-cleanup-v1', 'true');
+  if (localStorage.getItem('farming-reset-v1')) return;
+  items = FRESH_ITEMS.map((di, idx) => ({ id: idx + 1, ...di }));
+  nextId = items.length + 1;
+  saveItems();
+  renderItems();
+  localStorage.setItem('farming-reset-v1', 'true');
 }
 
 // ===== 탭 전환 =====
@@ -319,12 +284,8 @@ async function loadItems() {
       nextId = data.nextId || 1;
     } catch (e) {}
   }
-  if (items.length === 0) {
-    items = [
-      { id: nextId++, name: '아이템 1', image: '', rate: 0.5, count: 0, group: 1 },
-      { id: nextId++, name: '아이템 2', image: '', rate: 0.5, count: 0, group: 2 }
-    ];
-  }
+  // 로드된 아이템 없으면 초기값 placeholder
+  if (items.length === 0) items = [];
   renderItems();
 
   // Firestore에서 공유 데이터 동기화
@@ -349,10 +310,8 @@ async function loadItems() {
       console.log('Firestore 로드 실패, 로컬 데이터 사용');
     }
   }
-  // 오너 최초 방문 시 기본 아이템 추가
-  seedDefaultItems();
-  // v3 시딩에서 중복 추가된 아이템 정리
-  cleanupDuplicates();
+  // 오너 최초 방문 시 새 아이템으로 리셋
+  resetToFreshItems();
 }
 function saveItems() {
   localStorage.setItem('farming-items', JSON.stringify({ items, nextId }));
@@ -377,6 +336,8 @@ function updateTotalKills() {
   totalKills.textContent = total.toLocaleString() + ' 마리';
 }
 
+let dragSrcId = null;
+
 function renderGroup(gridId, groupNum) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
@@ -384,6 +345,41 @@ function renderGroup(gridId, groupNum) {
   items.filter(i => (i.group || 1) === groupNum).forEach(item => {
     const card = document.createElement('div');
     card.className = 'item-card';
+
+    // ── 드래그앤드롭 (오너만) ──
+    if (isOwner) {
+      card.draggable = true;
+      card.ondragstart = (e) => {
+        dragSrcId = item.id;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => card.classList.add('dragging'), 0);
+      };
+      card.ondragend = () => {
+        dragSrcId = null;
+        document.querySelectorAll('.item-card').forEach(c => {
+          c.classList.remove('dragging', 'drag-over');
+        });
+      };
+      card.ondragover = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragSrcId !== item.id) card.classList.add('drag-over');
+      };
+      card.ondragleave = () => card.classList.remove('drag-over');
+      card.ondrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.remove('drag-over');
+        if (!dragSrcId || dragSrcId === item.id) return;
+        const srcIdx = items.findIndex(i => i.id === dragSrcId);
+        const dstIdx = items.findIndex(i => i.id === item.id);
+        if (srcIdx === -1 || dstIdx === -1) return;
+        const [moved] = items.splice(srcIdx, 1);
+        items.splice(dstIdx, 0, moved);
+        saveItems();
+        renderItems();
+      };
+    }
     const imgHtml = item.image
       ? `<img src="${item.image}" alt="" onerror="this.style.display='none'">`
       : `<span class="placeholder">🖼</span>`;
