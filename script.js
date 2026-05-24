@@ -339,6 +339,7 @@ function renderGroup(gridId, groupNum) {
         ${isOwner ? `<button class="plus" data-plus="${item.id}">+</button>` : ''}
       </div>
       <p class="item-estimate">${estimateText}</p>
+      ${isOwner ? `<button class="item-move" data-move="${item.id}" title="${groupNum === 1 ? '아래 그룹으로 이동' : '위 그룹으로 이동'}">${groupNum === 1 ? '↓ 그룹 2로' : '↑ 그룹 1로'}</button>` : ''}
     `;
     grid.appendChild(card);
   });
@@ -350,6 +351,12 @@ function renderGroup(gridId, groupNum) {
   });
   grid.querySelectorAll('[data-edit]').forEach(b => {
     b.onclick = () => openEdit(parseInt(b.dataset.edit));
+  });
+  grid.querySelectorAll('[data-move]').forEach(b => {
+    b.onclick = () => {
+      const it = items.find(i => i.id === parseInt(b.dataset.move));
+      if (it) { it.group = it.group === 1 ? 2 : 1; saveItems(); renderItems(); }
+    };
   });
   grid.querySelectorAll('[data-count]').forEach(input => {
     input.oninput = () => {

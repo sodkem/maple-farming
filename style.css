@@ -9,7 +9,7 @@ body {
 }
 
 .container {
-  max-width: 720px;
+  max-width: 1100px;
   margin: 0 auto;
   background: white;
   border-radius: 16px;
@@ -314,9 +314,9 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
 
 /* ===== 아이템 두 그룹 레이아웃 ===== */
 .items-groups {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 12px;
 }
 .item-group { min-width: 0; }
@@ -336,6 +336,17 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
 }
 .editable-name:hover { background: #d8ecff; color: #007aff; }
 .item-group .full-btn { margin-bottom: 0; margin-top: 6px; }
+.item-move {
+  width: 100%;
+  padding: 3px;
+  font-size: 11px;
+  color: #888;
+  border-color: #e0e0e0;
+  background: #f8f8f8;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+.item-move:hover:not(:disabled) { background: #e3f2ff; color: #007aff; border-color: #b3d9ff; }
 
 /* ===== 링크 섹션 ===== */
 .links-section {
