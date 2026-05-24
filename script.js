@@ -366,7 +366,7 @@ function createFarmTab({ key, itemVersion, itemList, prefix, defaultGroupNames, 
     if (saved >= itemVersion) return;
     items = itemList.map((di, idx) => ({
       id: idx + 1, name: di.name,
-      image: `https://maplestory.io/api/gms/90/item/${di.imgId}/icon`,
+      image: di.imgUrl || `https://maplestory.io/api/gms/90/item/${di.imgId}/icon`,
       rate: di.rate, count: 0, group: di.group,
     }));
     nextId = items.length + 1;
