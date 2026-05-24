@@ -134,7 +134,7 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  background: #ffffff;
+  background: #f5f5f7;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -147,7 +147,7 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  mix-blend-mode: multiply;
+  clip-path: inset(1px);
 }
 .item-image-wrap .placeholder { font-size: 20px; color: #c7c7cc; }
 .item-edit {
