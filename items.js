@@ -25,9 +25,26 @@ const ITEM_LIST = [
   { name: '마법의 돌',              rate: 0.08,  group: 2, imgId: '4006000' },
 ];
 
-// ===== 마스터크로노스 아이템 목록 =====
+// ===== 마스터크로노스 아이템 목록 (잃어버린 시간의 길) =====
 // 아이템 추가 시 KRONOS_ITEM_VERSION + 1
-const KRONOS_ITEM_VERSION = 1;
+const KRONOS_ITEM_VERSION = 2;
 const KRONOS_ITEM_LIST = [
-  // 여기에 마스터크로노스 드랍 아이템 추가
+  // ── 그룹 1: 잃시길 드랍 ──
+  { name: '브라운 피에뜨',              rate: 0.01,  group: 1, imgId: '1040079' },
+  { name: '브라운 피에뜨 바지',          rate: 0.01,  group: 1, imgId: '1060069' },
+  { name: '레드 피에르슈즈',             rate: 0.01,  group: 1, imgId: '1072118' },
+  { name: '황 진원장화',                 rate: 0.01,  group: 1, imgId: '1072000' },
+  { name: '미스릴 스케일러',             rate: 0.01,  group: 1, imgId: '1082069' },
+  { name: '활 제작의 촉진제',            rate: 0.008, group: 1, imgId: '4130012' },
+  { name: '다크 칼라스',                 rate: 0.007, group: 1, imgId: '1050049' },
+  { name: '아이보리 솔더메일',           rate: 0.007, group: 1, imgId: '1041088' },
+  { name: '아이보리 솔더메일 바지',       rate: 0.007, group: 1, imgId: '1061087' },
+  { name: '청월 장갑',                   rate: 0.007, group: 1, imgId: '1082065' },
+  { name: '토비 표창',                   rate: 0.007, group: 1, imgId: '2070004' },
+  { name: '블루 골든윈드슈즈',           rate: 0.006, group: 1, imgId: '1072141' },
+  { name: '골든 모울',                   rate: 0.006, group: 1, imgId: '1422005' },
+  { name: '다크 슬레인',                 rate: 0.006, group: 1, imgId: '1472021' },
+  { name: '투구 민첩 주문서 60%',        rate: 0.006, group: 1, imgId: '2040029' },
+  { name: '두손도끼 공격력 주문서 10%',  rate: 0.004, group: 1, imgId: '2044102' },
+  { name: '스태프 마력 주문서 10%',      rate: 0.004, group: 1, imgId: '2043802' },
 ];

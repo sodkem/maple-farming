@@ -106,6 +106,18 @@
         </div>
       </div>
 
+      <div class="exp-tracker">
+        <div class="exp-tracker-header">
+          <span class="exp-tracker-label">⚔️ 누적 경험치</span>
+          <span id="k-accum-exp" class="exp-tracker-total">0</span>
+          <button id="k-exp-reset" class="small-btn">초기화</button>
+        </div>
+        <div class="exp-tracker-input">
+          <input id="k-exp-input" type="number" min="0" placeholder="획득 경험치 입력..." />
+          <button id="k-exp-add" class="primary">+ 추가</button>
+        </div>
+      </div>
+
       <div class="items-groups">
         <div class="item-group">
           <div class="group-header">
@@ -115,19 +127,12 @@
           <div id="k-items-grid-1" class="items-grid"></div>
           <button id="k-btn-add-item-1" class="full-btn owner-only">+ 추가</button>
         </div>
-        <div class="item-group">
-          <div class="group-header">
-            <span class="group-name" id="k-group-name-2">그룹 2</span>
-          </div>
-          <div id="k-items-grid-2" class="items-grid"></div>
-          <button id="k-btn-add-item-2" class="full-btn owner-only">+ 추가</button>
-        </div>
       </div>
 
       <div class="summary">
         <p class="label">전체 사냥 추정</p>
         <p id="k-total-kills" class="big-number">0 마리</p>
-        <p class="hint">그룹 2 최대치 기준</p>
+        <p class="hint">누적 경험치 ÷ 115 기준</p>
       </div>
     </div>
 

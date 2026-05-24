@@ -583,3 +583,36 @@ body.is-owner .full-btn.owner-only { display: block !important; }
   border-radius: 0 0 0 12px;
   background: #fafafa;
 }
+
+/* ===== EXP 누적 트래커 ===== */
+.exp-tracker {
+  background: #f5f5f7;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.exp-tracker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.exp-tracker-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+}
+.exp-tracker-total {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  color: #007aff;
+  font-variant-numeric: tabular-nums;
+}
+.exp-tracker-input {
+  display: flex;
+  gap: 8px;
+}
+.exp-tracker-input input {
+  flex: 1;
+}
