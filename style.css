@@ -312,6 +312,31 @@ button.danger { color: #ff3b30; border-color: #ffcdc9; }
 }
 #image-remove:hover { background: #d70015; }
 
+/* ===== 아이템 두 그룹 레이아웃 ===== */
+.items-groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.item-group { min-width: 0; }
+.group-header { margin-bottom: 6px; }
+.group-name {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  background: #ececf0;
+  border-radius: 10px;
+  padding: 3px 10px;
+  letter-spacing: 0.02em;
+}
+.editable-name {
+  cursor: pointer;
+}
+.editable-name:hover { background: #d8ecff; color: #007aff; }
+.item-group .full-btn { margin-bottom: 0; margin-top: 6px; }
+
 /* ===== 링크 섹션 ===== */
 .links-section {
   background: #f5f5f7;

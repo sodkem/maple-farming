@@ -37,6 +37,7 @@ function handleCredentialResponse(response) {
   applyAuthState();
   renderItems();
   renderLinks();
+  initGroupNameEditing();
 }
 
 function initGoogleAuth() {
@@ -110,6 +111,43 @@ tabs.forEach(t => {
     if (t.dataset.tab === 'history') renderHistory();
   };
 });
+
+// ===== 그룹 이름 관리 =====
+let groupNames = ['파밍 1', '파밍 2'];
+
+function loadGroupNames() {
+  const raw = localStorage.getItem('farming-groups');
+  if (raw) { try { groupNames = JSON.parse(raw); } catch(e) {} }
+  applyGroupNames();
+  if (db) {
+    db.collection('farm').doc('groups').get().then(snap => {
+      if (snap.exists && snap.data().names) { groupNames = snap.data().names; applyGroupNames(); }
+    }).catch(() => {});
+  }
+}
+function saveGroupNames() {
+  localStorage.setItem('farming-groups', JSON.stringify(groupNames));
+  if (db) db.collection('farm').doc('groups').set({ names: groupNames }).catch(() => {});
+}
+function applyGroupNames() {
+  [0, 1].forEach(idx => {
+    const el = document.getElementById(`group-name-${idx + 1}`);
+    if (el) el.textContent = groupNames[idx] || `파밍 ${idx + 1}`;
+  });
+}
+function initGroupNameEditing() {
+  if (!isOwner) return;
+  [0, 1].forEach(idx => {
+    const el = document.getElementById(`group-name-${idx + 1}`);
+    if (!el || el.dataset.editable) return;
+    el.dataset.editable = 'true';
+    el.classList.add('editable-name');
+    el.onclick = () => {
+      const n = prompt('그룹 이름 변경:', groupNames[idx]);
+      if (n !== null && n.trim()) { groupNames[idx] = n.trim(); el.textContent = groupNames[idx]; saveGroupNames(); }
+    };
+  });
+}
 
 // ===== 링크 관리 =====
 let links = [];
@@ -206,7 +244,6 @@ qtResetBtn.onclick = () => {
 };
 
 // ===== 아이템 관리 =====
-const itemsGrid = document.getElementById('items-grid');
 const totalKills = document.getElementById('total-kills');
 let items = [];
 let nextId = 1;
@@ -222,7 +259,10 @@ async function loadItems() {
     } catch (e) {}
   }
   if (items.length === 0) {
-    items = [{ id: nextId++, name: '아이템 1', image: '', rate: 0.5, count: 0 }];
+    items = [
+      { id: nextId++, name: '아이템 1', image: '', rate: 0.5, count: 0, group: 1 },
+      { id: nextId++, name: '아이템 2', image: '', rate: 0.5, count: 0, group: 2 }
+    ];
   }
   renderItems();
 
@@ -257,19 +297,32 @@ function calcEstimate(item) {
   return 0;
 }
 
-function renderItems() {
-  itemsGrid.innerHTML = '';
-  items.forEach(item => {
+function updateTotalKills() {
+  const maxEst = (grp) => {
+    let m = 0;
+    items.filter(i => (i.group || 1) === grp).forEach(i => { const e = calcEstimate(i); if (e > m) m = e; });
+    return m;
+  };
+  const m1 = maxEst(1), m2 = maxEst(2);
+  const total = m1 > 0 && m2 > 0 ? Math.round((m1 + m2) / 2) : Math.max(m1, m2);
+  totalKills.textContent = total.toLocaleString() + ' 마리';
+}
+
+function renderGroup(gridId, groupNum) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  grid.innerHTML = '';
+  items.filter(i => (i.group || 1) === groupNum).forEach(item => {
     const card = document.createElement('div');
     card.className = 'item-card';
     const imgHtml = item.image
-      ? `<img src="${item.image}" alt="" onerror="this.style.display='none';this.parentNode.innerHTML='<span class=placeholder>🖼</span>'+this.parentNode.querySelector('.item-edit').outerHTML">`
+      ? `<img src="${item.image}" alt="" onerror="this.style.display='none'">`
       : `<span class="placeholder">🖼</span>`;
     const estimate = calcEstimate(item);
     const estimateText = item.rate > 0 && item.count > 0
-      ? `약 <strong>${estimate.toLocaleString()}</strong>마리 잡은 효과`
+      ? `약 <strong>${estimate.toLocaleString()}</strong>마리`
       : item.rate > 0
-      ? `1개당 평균 ${Math.round(1 / (item.rate / 100)).toLocaleString()}마리`
+      ? `평균 ${Math.round(1 / (item.rate / 100)).toLocaleString()}마리`
       : '확률 입력';
     card.innerHTML = `
       <div class="item-image-wrap">
@@ -287,40 +340,29 @@ function renderItems() {
       </div>
       <p class="item-estimate">${estimateText}</p>
     `;
-    itemsGrid.appendChild(card);
+    grid.appendChild(card);
   });
-  itemsGrid.querySelectorAll('[data-plus]').forEach(b => {
-    b.onclick = () => {
-      const it = items.find(i => i.id === parseInt(b.dataset.plus));
-      it.count++;
-      saveItems(); renderItems();
-    };
+  grid.querySelectorAll('[data-plus]').forEach(b => {
+    b.onclick = () => { const it = items.find(i => i.id === parseInt(b.dataset.plus)); it.count++; saveItems(); renderItems(); };
   });
-  itemsGrid.querySelectorAll('[data-minus]').forEach(b => {
-    b.onclick = () => {
-      const it = items.find(i => i.id === parseInt(b.dataset.minus));
-      if (it.count > 0) { it.count--; saveItems(); renderItems(); }
-    };
+  grid.querySelectorAll('[data-minus]').forEach(b => {
+    b.onclick = () => { const it = items.find(i => i.id === parseInt(b.dataset.minus)); if (it.count > 0) { it.count--; saveItems(); renderItems(); } };
   });
-  itemsGrid.querySelectorAll('[data-edit]').forEach(b => {
+  grid.querySelectorAll('[data-edit]').forEach(b => {
     b.onclick = () => openEdit(parseInt(b.dataset.edit));
   });
-  itemsGrid.querySelectorAll('[data-count]').forEach(input => {
+  grid.querySelectorAll('[data-count]').forEach(input => {
     input.oninput = () => {
       const val = parseInt(input.value);
       const it = items.find(i => i.id === parseInt(input.dataset.count));
       if (!it) return;
       it.count = isNaN(val) || val < 0 ? 0 : val;
       const estimateEl = input.closest('.item-card').querySelector('.item-estimate');
-      const estimate = calcEstimate(it);
+      const est = calcEstimate(it);
       estimateEl.innerHTML = it.rate > 0 && it.count > 0
-        ? `약 <strong>${estimate.toLocaleString()}</strong>마리 잡은 효과`
-        : it.rate > 0
-        ? `1개당 평균 ${Math.round(1 / (it.rate / 100)).toLocaleString()}마리`
-        : '확률 입력';
-      let max = 0;
-      items.forEach(i => { const e = calcEstimate(i); if (e > max) max = e; });
-      totalKills.textContent = max.toLocaleString() + ' 마리';
+        ? `약 <strong>${est.toLocaleString()}</strong>마리`
+        : it.rate > 0 ? `평균 ${Math.round(1 / (it.rate / 100)).toLocaleString()}마리` : '확률 입력';
+      updateTotalKills();
     };
     input.onblur = () => {
       const it = items.find(i => i.id === parseInt(input.dataset.count));
@@ -330,13 +372,20 @@ function renderItems() {
     };
     input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
   });
-  let max = 0;
-  items.forEach(i => { const e = calcEstimate(i); if (e > max) max = e; });
-  totalKills.textContent = max.toLocaleString() + ' 마리';
 }
 
-document.getElementById('btn-add-item').onclick = () => {
-  items.push({ id: nextId++, name: '새 아이템', image: '', rate: 1, count: 0 });
+function renderItems() {
+  renderGroup('items-grid-1', 1);
+  renderGroup('items-grid-2', 2);
+  updateTotalKills();
+}
+
+document.getElementById('btn-add-item-1').onclick = () => {
+  items.push({ id: nextId++, name: '새 아이템', image: '', rate: 1, count: 0, group: 1 });
+  saveItems(); renderItems();
+};
+document.getElementById('btn-add-item-2').onclick = () => {
+  items.push({ id: nextId++, name: '새 아이템', image: '', rate: 1, count: 0, group: 2 });
   saveItems(); renderItems();
 };
 
@@ -611,3 +660,4 @@ document.getElementById('btn-clear-all').onclick = () => {
 
 loadItems();
 loadLinks();
+loadGroupNames();

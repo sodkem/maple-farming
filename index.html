@@ -52,13 +52,27 @@
         </div>
       </div>
 
-      <div id="items-grid" class="items-grid"></div>
-      <button id="btn-add-item" class="full-btn owner-only">+ 아이템 추가</button>
+      <div class="items-groups">
+        <div class="item-group">
+          <div class="group-header">
+            <span class="group-name" id="group-name-1">파밍 1</span>
+          </div>
+          <div id="items-grid-1" class="items-grid"></div>
+          <button id="btn-add-item-1" class="full-btn owner-only">+ 추가</button>
+        </div>
+        <div class="item-group">
+          <div class="group-header">
+            <span class="group-name" id="group-name-2">파밍 2</span>
+          </div>
+          <div id="items-grid-2" class="items-grid"></div>
+          <button id="btn-add-item-2" class="full-btn owner-only">+ 추가</button>
+        </div>
+      </div>
 
       <div class="summary">
         <p class="label">전체 사냥 추정</p>
         <p id="total-kills" class="big-number">0 마리</p>
-        <p class="hint">아이템 중 가장 많이 필요한 마릿수 기준</p>
+        <p class="hint">1·2번 그룹 최대치의 평균값</p>
       </div>
     </div>
 
