@@ -46,7 +46,7 @@ p { line-height: 1.5; }
 
 .hidden { display: none !important; }
 
-input[type="text"], input[type="number"] {
+input[type="text"], input[type="number"]:not(.count-input) {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #d2d2d7;
@@ -54,6 +54,28 @@ input[type="text"], input[type="number"] {
   font-size: 14px;
   font-family: inherit;
 }
+
+.count-input {
+  border: none;
+  background: #f5f5f7;
+  border-radius: 8px;
+  padding: 6px 0;
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+  text-align: center;
+  width: 0;
+  cursor: text;
+}
+.count-input:focus {
+  outline: 2px solid #007aff;
+  outline-offset: -1px;
+  background: #e3f2ff;
+}
+.count-input::-webkit-outer-spin-button,
+.count-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.count-input[type=number] { appearance: textfield; }
 input:focus { outline: 2px solid #007aff; outline-offset: -1px; }
 
 button {

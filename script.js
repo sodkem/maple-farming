@@ -196,7 +196,9 @@ function renderItems() {
       <p class="item-rate">${item.rate}% 드랍</p>
       <div class="counter">
         ${isOwner ? `<button data-minus="${item.id}">−</button>` : ''}
-        <div class="display">${item.count}</div>
+        ${isOwner
+          ? `<input class="display count-input" type="number" min="0" value="${item.count}" data-count="${item.id}" />`
+          : `<div class="display">${item.count}</div>`}
         ${isOwner ? `<button class="plus" data-plus="${item.id}">+</button>` : ''}
       </div>
       <p class="item-estimate">${estimateText}</p>
@@ -218,6 +220,31 @@ function renderItems() {
   });
   itemsGrid.querySelectorAll('[data-edit]').forEach(b => {
     b.onclick = () => openEdit(parseInt(b.dataset.edit));
+  });
+  itemsGrid.querySelectorAll('[data-count]').forEach(input => {
+    input.oninput = () => {
+      const val = parseInt(input.value);
+      const it = items.find(i => i.id === parseInt(input.dataset.count));
+      if (!it) return;
+      it.count = isNaN(val) || val < 0 ? 0 : val;
+      const estimateEl = input.closest('.item-card').querySelector('.item-estimate');
+      const estimate = calcEstimate(it);
+      estimateEl.innerHTML = it.rate > 0 && it.count > 0
+        ? `약 <strong>${estimate.toLocaleString()}</strong>마리 잡은 효과`
+        : it.rate > 0
+        ? `1개당 평균 ${Math.round(1 / (it.rate / 100)).toLocaleString()}마리`
+        : '확률 입력';
+      let max = 0;
+      items.forEach(i => { const e = calcEstimate(i); if (e > max) max = e; });
+      totalKills.textContent = max.toLocaleString() + ' 마리';
+    };
+    input.onblur = () => {
+      const it = items.find(i => i.id === parseInt(input.dataset.count));
+      if (!it) return;
+      if (isNaN(it.count) || it.count < 0) { it.count = 0; input.value = 0; }
+      saveItems();
+    };
+    input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
   });
   let max = 0;
   items.forEach(i => { const e = calcEstimate(i); if (e > max) max = e; });
