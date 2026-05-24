@@ -102,23 +102,34 @@ function syncToFirestore() {
 
 // ===== 초기 아이템 세팅 (월묘 장비 / 원석) =====
 const FRESH_ITEMS = [
-  { name: '목비 표창',           image: 'https://maplestory.io/api/gms/90/item/2070002/icon', rate: 0.01,  count: 0, group: 1 },
-  { name: '블루 문',             image: 'https://maplestory.io/api/gms/90/item/1032011/icon', rate: 0.01,  count: 0, group: 1 },
-  { name: '옐로우 하프슈즈',     image: 'https://maplestory.io/api/gms/90/item/1072109/icon', rate: 0.01,  count: 0, group: 1 },
-  { name: '은의 원석',           image: 'https://maplestory.io/api/gms/90/item/4010004/icon', rate: 0.4,   count: 0, group: 2 },
-  { name: '사파이어의 원석',     image: 'https://maplestory.io/api/gms/90/item/4020005/icon', rate: 0.3,   count: 0, group: 2 },
-  { name: '지혜의 크리스탈 원석', image: 'https://maplestory.io/api/gms/90/item/4004001/icon', rate: 0.1,   count: 0, group: 2 },
-  { name: '마법의 돌',           image: 'https://maplestory.io/api/gms/90/item/4006000/icon', rate: 0.08,  count: 0, group: 2 },
+  // ── 그룹 1: 월묘 장비 ──
+  { name: '목비 표창',             image: 'https://maplestory.io/api/gms/90/item/2070002/icon', rate: 0.01,  count: 0, group: 1 },
+  { name: '블루 문',               image: 'https://maplestory.io/api/gms/90/item/1032011/icon', rate: 0.01,  count: 0, group: 1 },
+  { name: '옐로우 하프슈즈',       image: 'https://maplestory.io/api/gms/90/item/1072109/icon', rate: 0.01,  count: 0, group: 1 },
+  { name: '골드 브레이스',         image: 'https://maplestory.io/api/gms/90/item/1082072/icon', rate: 0.01,  count: 0, group: 1 },
+  { name: '블루 카운터',           image: 'https://maplestory.io/api/gms/90/item/1312007/icon', rate: 0.008, count: 0, group: 1 },
+  { name: '노란색 우산',           image: 'https://maplestory.io/api/gms/90/item/1302016/icon', rate: 0.008, count: 0, group: 1 },
+  { name: '파란색 모험가의 망토',   image: 'https://maplestory.io/api/gms/90/item/1102001/icon', rate: 0.006, count: 0, group: 1 },
+  { name: '투구 민첩 주문서 60%',  image: 'https://maplestory.io/api/gms/90/item/2040029/icon', rate: 0.006, count: 0, group: 1 },
+  { name: '아다만티움 타워 실드',   image: 'https://maplestory.io/api/gms/90/item/1092014/icon', rate: 0.005, count: 0, group: 1 },
+  { name: '신발 점프력 주문서 10%', image: 'https://maplestory.io/api/gms/90/item/2040705/icon', rate: 0.003, count: 0, group: 1 },
+  { name: '네오자드',               image: 'https://maplestory.io/api/gms/90/item/1482006/icon', rate: 0.002, count: 0, group: 1 },
+  // ── 그룹 2: 월묘 원석 ──
+  { name: '은의 원석',             image: 'https://maplestory.io/api/gms/90/item/4010004/icon', rate: 0.4,   count: 0, group: 2 },
+  { name: '사파이어의 원석',       image: 'https://maplestory.io/api/gms/90/item/4020005/icon', rate: 0.3,   count: 0, group: 2 },
+  { name: '지혜의 크리스탈 원석',  image: 'https://maplestory.io/api/gms/90/item/4004001/icon', rate: 0.1,   count: 0, group: 2 },
+  { name: '마법의 돌',             image: 'https://maplestory.io/api/gms/90/item/4006000/icon', rate: 0.08,  count: 0, group: 2 },
 ];
 
 function resetToFreshItems() {
   if (!isOwner) return;
-  if (localStorage.getItem('farming-reset-v1')) return;
+  if (localStorage.getItem('farming-reset-v2')) return;
   items = FRESH_ITEMS.map((di, idx) => ({ id: idx + 1, ...di }));
   nextId = items.length + 1;
   saveItems();
   renderItems();
   localStorage.setItem('farming-reset-v1', 'true');
+  localStorage.setItem('farming-reset-v2', 'true');
 }
 
 // ===== 탭 전환 =====
