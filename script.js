@@ -36,6 +36,7 @@ function handleCredentialResponse(response) {
   document.getElementById('google-signin-btn').classList.add('hidden');
   applyAuthState();
   renderItems();
+  renderLinks();
 }
 
 function initGoogleAuth() {
@@ -110,16 +111,97 @@ tabs.forEach(t => {
   };
 });
 
-// ===== 메랜샵 검색 =====
-const mashopQuery = document.getElementById('mashop-query');
-const mashopSearch = document.getElementById('mashop-search');
-function doSearch() {
-  const q = mashopQuery.value.trim();
-  if (!q) return;
-  window.open('https://mashop.kr/?search=' + encodeURIComponent(q), '_blank');
+// ===== 링크 관리 =====
+let links = [];
+let nextLinkId = 1;
+
+function loadLinks() {
+  const raw = localStorage.getItem('farming-links');
+  if (raw) {
+    try { const d = JSON.parse(raw); links = d.links || []; nextLinkId = d.nextId || 1; } catch(e) {}
+  }
+  if (links.length === 0) {
+    links = [{ id: nextLinkId++, name: '까막산 입구', url: 'https://mashop.kr/jari/%EB%A3%A8%EB%8D%94%EC%8A%A4%ED%98%B8%EC%88%98%3A%20%EA%B9%8C%EB%A7%89%EC%82%B0%20%EC%9E%85%EA%B5%AC' }];
+    saveLinks();
+  }
+  renderLinks();
+  if (db) {
+    db.collection('farm').doc('links').get().then(snap => {
+      if (snap.exists) { const d = snap.data(); links = d.links || []; nextLinkId = d.nextId || 1; renderLinks(); }
+    }).catch(() => {});
+  }
 }
-mashopSearch.onclick = doSearch;
-mashopQuery.onkeydown = (e) => { if (e.key === 'Enter') doSearch(); };
+
+function saveLinks() {
+  localStorage.setItem('farming-links', JSON.stringify({ links, nextId: nextLinkId }));
+  if (isOwner && db) db.collection('farm').doc('links').set({ links, nextId: nextLinkId }).catch(() => {});
+}
+
+function renderLinks() {
+  const list = document.getElementById('links-list');
+  if (!list) return;
+  list.innerHTML = '';
+  links.forEach(link => {
+    const tag = document.createElement('a');
+    tag.className = 'link-tag';
+    tag.href = link.url;
+    tag.target = '_blank';
+    tag.innerHTML = `<span>${link.name}</span>${isOwner ? `<button class="link-del" data-del="${link.id}">×</button>` : ''}`;
+    list.appendChild(tag);
+  });
+  list.querySelectorAll('.link-del').forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      links = links.filter(l => l.id !== parseInt(btn.dataset.del));
+      saveLinks(); renderLinks();
+    };
+  });
+}
+
+document.getElementById('btn-add-link').onclick = () => {
+  document.getElementById('link-form').classList.remove('hidden');
+  document.getElementById('link-name').value = '';
+  document.getElementById('link-url').value = '';
+  document.getElementById('link-name').focus();
+};
+document.getElementById('link-cancel').onclick = () => document.getElementById('link-form').classList.add('hidden');
+document.getElementById('link-save').onclick = () => {
+  const name = document.getElementById('link-name').value.trim();
+  let url = document.getElementById('link-url').value.trim();
+  if (!name || !url) return;
+  if (!url.startsWith('http')) url = 'https://' + url;
+  links.push({ id: nextLinkId++, name, url });
+  saveLinks(); renderLinks();
+  document.getElementById('link-form').classList.add('hidden');
+};
+document.getElementById('link-url').onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('link-save').click(); };
+
+// ===== 아이템탭 빠른 타이머 =====
+let qtStart = null, qtElapsed = 0, qtInterval = null;
+const qtClock = document.getElementById('qt-clock');
+const qtStartBtn = document.getElementById('qt-start');
+const qtPauseBtn = document.getElementById('qt-pause');
+const qtResetBtn = document.getElementById('qt-reset');
+
+qtStartBtn.onclick = () => {
+  qtStart = Date.now() - qtElapsed;
+  qtInterval = setInterval(() => { qtElapsed = Date.now() - qtStart; qtClock.textContent = formatTime(qtElapsed); }, 500);
+  qtStartBtn.disabled = true; qtPauseBtn.disabled = false;
+  qtStartBtn.textContent = '▶ 시작';
+};
+qtPauseBtn.onclick = () => {
+  clearInterval(qtInterval);
+  qtStartBtn.disabled = false; qtPauseBtn.disabled = true;
+  qtStartBtn.textContent = '▶ 이어서';
+};
+qtResetBtn.onclick = () => {
+  clearInterval(qtInterval);
+  qtElapsed = 0; qtStart = null;
+  qtClock.textContent = '00:00:00';
+  qtStartBtn.disabled = false; qtPauseBtn.disabled = true;
+  qtStartBtn.textContent = '▶ 시작';
+};
 
 // ===== 아이템 관리 =====
 const itemsGrid = document.getElementById('items-grid');
@@ -515,6 +597,7 @@ document.getElementById('btn-signout').onclick = () => {
   document.getElementById('google-signin-btn').classList.remove('hidden');
   applyAuthState();
   renderItems();
+  renderLinks();
 };
 
 document.getElementById('btn-clear-all').onclick = () => {
@@ -525,3 +608,4 @@ document.getElementById('btn-clear-all').onclick = () => {
 };
 
 loadItems();
+loadLinks();

@@ -27,14 +27,28 @@
 
     <!-- 아이템 탭 -->
     <div id="panel-items" class="panel">
-      <div class="search-box">
-        <label>🔍 메랜샵 시세 검색</label>
-        <div class="search-row">
-          <input id="mashop-query" type="text" placeholder="예: 자쿰의 투구, 흑국" />
-          <button id="mashop-search">검색 ↗</button>
+      <div class="links-section">
+        <div class="links-header">
+          <span class="links-title">🔗 링크</span>
+          <button id="btn-add-link" class="small-btn owner-only">+ 추가</button>
         </div>
-        <div>
-            <a target="_blank" href="https://mashop.kr/jari/%EB%A3%A8%EB%8D%94%EC%8A%A4%ED%98%B8%EC%88%98%3A%20%EA%B9%8C%EB%A7%89%EC%82%B0%20%EC%9E%85%EA%B5%AC">까막산 입구</a>            
+        <div id="links-list" class="links-list"></div>
+        <div id="link-form" class="link-form hidden">
+          <input id="link-name" type="text" placeholder="이름 (예: 까막산 입구)" />
+          <input id="link-url" type="text" placeholder="URL (예: https://...)" />
+          <div class="link-form-btns">
+            <button id="link-cancel" class="small-btn">취소</button>
+            <button id="link-save" class="small-btn primary">저장</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-timer">
+        <span id="qt-clock">00:00:00</span>
+        <div class="qt-btns">
+          <button id="qt-start">▶ 시작</button>
+          <button id="qt-pause" disabled>⏸</button>
+          <button id="qt-reset">↺</button>
         </div>
       </div>
 
