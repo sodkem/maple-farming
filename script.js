@@ -325,14 +325,43 @@ function calcEstimate(item) {
   return 0;
 }
 
-function updateTotalKills() {
-  let total = 0;
+let currentTotalKills = 0;
+
+// 그룹2 최대 추정값 계산
+function recomputeTotalKills() {
+  currentTotalKills = 0;
   items.filter(i => (i.group || 1) === 2).forEach(i => {
     const e = calcEstimate(i);
-    if (e > total) total = e;
+    if (e > currentTotalKills) currentTotalKills = e;
   });
-  totalKills.textContent = total.toLocaleString() + ' 마리';
 }
+
+// 아이템 확률 기대값 텍스트 (총 킬수 × 확률)
+function getEstimateText(item) {
+  if (currentTotalKills > 0) {
+    const exp = currentTotalKills * (item.rate / 100);
+    if (exp < 0.01) return '기대 &lt;0.01개';
+    const fmt = exp >= 10
+      ? Math.round(exp).toLocaleString()
+      : parseFloat(exp.toFixed(2)).toString();
+    return `기대 <strong>${fmt}</strong>개`;
+  }
+  return item.rate > 0
+    ? `평균 ${Math.round(100 / item.rate).toLocaleString()}마리/개`
+    : '확률 입력';
+}
+
+// 총 킬수 표시 + 모든 카드 기대값 동시 갱신 (입력 포커스 유지)
+function updateAllEstimates() {
+  recomputeTotalKills();
+  totalKills.textContent = currentTotalKills.toLocaleString() + ' 마리';
+  items.forEach(item => {
+    const el = document.querySelector(`[data-est-id="${item.id}"]`);
+    if (el) el.innerHTML = getEstimateText(item);
+  });
+}
+
+function updateTotalKills() { updateAllEstimates(); }
 
 let dragSrcId = null;
 
@@ -392,12 +421,6 @@ function renderGroup(gridId, groupNum) {
     const imgHtml = item.image
       ? `<img src="${item.image}" alt="" onerror="this.style.display='none'">`
       : `<span class="placeholder">🖼</span>`;
-    const estimate = calcEstimate(item);
-    const estimateText = item.rate > 0 && item.count > 0
-      ? `약 <strong>${estimate.toLocaleString()}</strong>마리`
-      : item.rate > 0
-      ? `평균 ${Math.round(1 / (item.rate / 100)).toLocaleString()}마리`
-      : '확률 입력';
     card.innerHTML = `
       <div class="item-image-wrap">
         ${imgHtml}
@@ -412,7 +435,7 @@ function renderGroup(gridId, groupNum) {
           : `<div class="display">${item.count}</div>`}
         ${isOwner ? `<button class="plus" data-plus="${item.id}">+</button>` : ''}
       </div>
-      <p class="item-estimate">${estimateText}</p>
+      <p class="item-estimate" data-est-id="${item.id}">${getEstimateText(item)}</p>
       ${isOwner ? `<button class="item-move" data-move="${item.id}" title="${groupNum === 1 ? '아래 그룹으로 이동' : '위 그룹으로 이동'}">${groupNum === 1 ? '↓ 그룹 2로' : '↑ 그룹 1로'}</button>` : ''}
     `;
     grid.appendChild(card);
@@ -438,12 +461,7 @@ function renderGroup(gridId, groupNum) {
       const it = items.find(i => i.id === parseInt(input.dataset.count));
       if (!it) return;
       it.count = isNaN(val) || val < 0 ? 0 : val;
-      const estimateEl = input.closest('.item-card').querySelector('.item-estimate');
-      const est = calcEstimate(it);
-      estimateEl.innerHTML = it.rate > 0 && it.count > 0
-        ? `약 <strong>${est.toLocaleString()}</strong>마리`
-        : it.rate > 0 ? `평균 ${Math.round(1 / (it.rate / 100)).toLocaleString()}마리` : '확률 입력';
-      updateTotalKills();
+      updateAllEstimates(); // 총 킬수 + 전체 기대값 동시 갱신
     };
     input.onblur = () => {
       const it = items.find(i => i.id === parseInt(input.dataset.count));
@@ -456,9 +474,10 @@ function renderGroup(gridId, groupNum) {
 }
 
 function renderItems() {
+  recomputeTotalKills(); // 카드 렌더 전에 먼저 계산
   renderGroup('items-grid-1', 1);
   renderGroup('items-grid-2', 2);
-  updateTotalKills();
+  totalKills.textContent = currentTotalKills.toLocaleString() + ' 마리';
   // 드래그 핸들러는 grid 교체 후 매번 다시 붙임
   attachDragHandlers(document.getElementById('items-grid-1'));
   attachDragHandlers(document.getElementById('items-grid-2'));
